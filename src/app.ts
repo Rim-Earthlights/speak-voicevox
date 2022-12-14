@@ -86,7 +86,9 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
     }
 
     if (message.channel.type === ChannelType.GuildVoice) {
-        await speak(message.channel as VoiceBasedChannel, message.content);
+        if (message.mentions.users.size === 0 && message.mentions.roles.size === 0) {
+            await speak(message.channel as VoiceBasedChannel, message.content);
+        }
     }
 });
 
