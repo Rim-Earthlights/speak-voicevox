@@ -83,7 +83,7 @@ export async function ready(channel: VoiceBasedChannel, voice: number): Promise<
     (channel as VoiceChannel).send({ embeds: [send] });
 }
 
-export async function speak(channel: VoiceBasedChannel, message: string | null): Promise<void> {
+export async function speak(channel: VoiceBasedChannel, message: string): Promise<void> {
     const vc = getVoiceConnection(channel.guild.id);
 
     const connection = vc
@@ -95,6 +95,10 @@ export async function speak(channel: VoiceBasedChannel, message: string | null):
               selfDeaf: true,
               selfMute: false
           });
+
+    if (message?.includes('http')) {
+        message = 'URLです';
+    }
 
     const audioQueryUri = `http://127.0.0.1:50021/audio_query`;
     const synthesisUri = `http://127.0.0.1:50021/synthesis`;
