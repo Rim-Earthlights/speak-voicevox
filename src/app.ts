@@ -1,4 +1,13 @@
-import { ChannelType, Message, REST, Routes, SlashCommandBuilder, VoiceBasedChannel } from 'discord.js';
+import {
+    Channel,
+    ChannelType,
+    Message,
+    PartialDMChannel,
+    REST,
+    Routes,
+    SlashCommandBuilder,
+    VoiceBasedChannel
+} from 'discord.js';
 import { commandSelector } from './bot/commands';
 import 'dayjs/locale/ja';
 import { DISCORD_CLIENT } from './constant/constants';
@@ -78,5 +87,14 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
 
     if (message.channel.type === ChannelType.GuildVoice) {
         await speak(message.channel as VoiceBasedChannel, message.content);
+    }
+});
+
+DISCORD_CLIENT.on('channelDelete', async (message: Channel | PartialDMChannel) => {
+    if (message.type === ChannelType.GuildVoice) {
+        const p = Speaker.player.find((p) => p.id === message.guild.id);
+        if (p) {
+            Speaker.player = Speaker.player.filter((p) => p.id !== message.guild.id);
+        }
     }
 });
