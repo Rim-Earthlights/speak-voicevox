@@ -8,7 +8,7 @@ import {
     NoSubscriberBehavior,
     StreamType
 } from '@discordjs/voice';
-import { VoiceBasedChannel } from 'discord.js';
+import { EmbedBuilder, VoiceBasedChannel, VoiceChannel } from 'discord.js';
 import dayjs from 'dayjs';
 import got from 'got';
 import { Readable } from 'stream';
@@ -62,6 +62,25 @@ async function removeAudioPlayer(gid: string): Promise<void> {
 
 export async function ready(channel: VoiceBasedChannel, voice: number): Promise<void> {
     await getAudioPlayer(channel.guild.id, voice);
+
+    const vc = getVoiceConnection(channel.guild.id);
+
+    const connection = vc
+        ? vc
+        : joinVoiceChannel({
+              adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
+              channelId: channel.id,
+              guildId: channel.guild.id,
+              selfDeaf: true,
+              selfMute: false
+          });
+    const send = new EmbedBuilder()
+        .setColor('#00cc88')
+        .setAuthor({ name: `読み上げちゃん` })
+        .setTitle('読み上げを開始します')
+        .setDescription('終了する際は `.discon` で終わるよ');
+
+    (channel as VoiceChannel).send({ embeds: [send] });
 }
 
 export async function speak(channel: VoiceBasedChannel, message: string | null): Promise<void> {
@@ -100,11 +119,18 @@ export async function speak(channel: VoiceBasedChannel, message: string | null):
     connection.subscribe(player);
 }
 
-export async function disconnect(gid: string): Promise<void> {
-    await removeAudioPlayer(gid);
+export async function disconnect(channel: VoiceBasedChannel): Promise<void> {
+    await removeAudioPlayer(channel.guild.id);
 
-    const connection = getVoiceConnection(gid);
+    const connection = getVoiceConnection(channel.guild.id);
     if (connection) {
         connection.destroy();
     }
+    const send = new EmbedBuilder()
+        .setColor('#00cc88')
+        .setAuthor({ name: `読み上げちゃん` })
+        .setTitle('読み上げ終了')
+        .setDescription('またね！');
+
+    (channel as VoiceChannel).send({ embeds: [send] });
 }

@@ -1,4 +1,4 @@
-import { Message, REST, Routes, SlashCommandBuilder, VoiceBasedChannel } from 'discord.js';
+import { ChannelType, Message, REST, Routes, SlashCommandBuilder, VoiceBasedChannel } from 'discord.js';
 import { commandSelector } from './bot/commands';
 import 'dayjs/locale/ja';
 import { DISCORD_CLIENT } from './constant/constants';
@@ -69,12 +69,14 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
         return;
     }
     const state = Speaker.player.find((s) => s.id === message.guild?.id);
-    console.log(state);
     if (!state) {
         return;
     }
     if (!state.player) {
         return;
     }
-    await speak(message.channel as VoiceBasedChannel, message.content);
+
+    if (message.channel.type === ChannelType.GuildVoice) {
+        await speak(message.channel as VoiceBasedChannel, message.content);
+    }
 });

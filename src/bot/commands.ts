@@ -19,8 +19,8 @@ export async function commandSelector(message: Message) {
             const channel = message.member?.voice.channel;
             const voiceType = Number(content[0]);
             let result;
-
-            if (voiceType <= 0) {
+            console.log(voiceType);
+            if (voiceType <= 0 || Number.isNaN(voiceType)) {
                 result = 0;
             } else {
                 result = voiceType;
@@ -45,7 +45,7 @@ export async function commandSelector(message: Message) {
                 return;
             }
 
-            await BotFunctions.Speak.disconnect(channel.guild.id);
+            await BotFunctions.Speak.disconnect(channel);
         }
     }
 }
