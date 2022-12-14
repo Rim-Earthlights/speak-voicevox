@@ -1,0 +1,10 @@
+export const CONFIG = {
+    TOKEN: 'YOUR_API_KEY',
+    DB: {
+        HOSTNAME: 'HOSTNAME',
+        USERNAME: 'orange',
+        DATABASE: 'orangebot',
+        PASSWORD: 'PASSWORD',
+        FLUSH: false
+    }
+};

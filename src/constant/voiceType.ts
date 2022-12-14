@@ -1,0 +1,1 @@
+const VOICE_TYPE = [];
