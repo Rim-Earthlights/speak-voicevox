@@ -12,7 +12,7 @@ import { EmbedBuilder, VoiceBasedChannel, VoiceChannel } from 'discord.js';
 import dayjs from 'dayjs';
 import got from 'got';
 import { Readable } from 'stream';
-import { AudioResponse } from '../../interface/audioResponse';
+import { AudioResponse, SpeakersResponse } from '../../interface/audioResponse';
 
 export class Speaker {
     static player: { id: string; voice: number; player: AudioPlayer }[] = [];
@@ -54,6 +54,9 @@ async function removeAudioPlayer(gid: string): Promise<void> {
 export async function ready(channel: VoiceBasedChannel, voice: number): Promise<void> {
     await updateAudioPlayer(channel.guild.id, voice);
 
+    const speakersUri = `http://127.0.0.1:50021/speakers`;
+    const speakers = (await got.get(speakersUri).json()) as SpeakersResponse[];
+
     const isInitializedUri = `http://127.0.0.1:50021/is_initialized_speaker`;
 
     const isInitialized = (await got.get(isInitializedUri, { searchParams: { speaker: voice } }).json()) as boolean;
@@ -63,6 +66,14 @@ export async function ready(channel: VoiceBasedChannel, voice: number): Promise<
     }
 
     const vc = getVoiceConnection(channel.guild.id);
+
+    let voiceName: string = '不明';
+    speakers.map((speaker) => {
+        const style = speaker.styles.find((style) => style.id === voice);
+        if (style) {
+            voiceName = `${speaker.name}/${style.name}`;
+        }
+    });
 
     const connection = vc
         ? vc
@@ -75,7 +86,7 @@ export async function ready(channel: VoiceBasedChannel, voice: number): Promise<
           });
     const send = new EmbedBuilder()
         .setColor('#00cc88')
-        .setAuthor({ name: `読み上げちゃん` })
+        .setAuthor({ name: `読み上げちゃん: ${voiceName}` })
         .setTitle('読み上げを開始します')
         .setDescription('終了する際は `.discon` で終わるよ');
 

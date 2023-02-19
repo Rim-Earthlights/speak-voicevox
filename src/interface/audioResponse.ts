@@ -26,3 +26,14 @@ export interface AudioResponse {
     outputStereo: boolean;
     kana: string;
 }
+export interface SpeakersResponse {
+    name: string;
+    speaker_uuid: string;
+    styles: [
+        {
+            name: string;
+            id: number;
+        }
+    ];
+    version: string;
+}
