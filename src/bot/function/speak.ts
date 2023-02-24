@@ -119,6 +119,8 @@ export async function speak(channel: VoiceBasedChannel, message: string): Promis
         .post(audioQueryUri, { searchParams: { text: message, speaker: PlayerData?.voice } })
         .json()) as AudioResponse;
     console.log(JSON.stringify(audioQuery));
+    console.log(PlayerData?.speed);
+    console.log(JSON.stringify({ ...audioQuery, speedScale: PlayerData?.speed }));
     const stream = await got
         .post(synthesisUri, {
             searchParams: { speaker: PlayerData?.voice },

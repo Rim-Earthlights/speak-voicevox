@@ -42,7 +42,7 @@ export async function commandSelector(message: Message) {
                 return;
             }
 
-            await BotFunctions.Speak.ready(channel, voice);
+            await BotFunctions.Speak.ready(channel, voice, speed);
             break;
         }
         case 'discon': {
