@@ -24,6 +24,7 @@ async function updateAudioPlayer(gid: string, voice?: number, speed?: number): P
     if (PlayerData) {
         const index = Speaker.player.findIndex((p) => p === PlayerData);
         Speaker.player[index].voice = voice ? voice : Speaker.player[index].voice;
+        Speaker.player[index].speed = speed ? speed : Speaker.player[index].speed;
         Speaker.player[index].player = createAudioPlayer({
             behaviors: {
                 noSubscriber: NoSubscriberBehavior.Pause
@@ -118,9 +119,6 @@ export async function speak(channel: VoiceBasedChannel, message: string): Promis
     const audioQuery = (await got
         .post(audioQueryUri, { searchParams: { text: message, speaker: PlayerData?.voice } })
         .json()) as AudioResponse;
-    console.log(JSON.stringify(audioQuery));
-    console.log(PlayerData?.speed);
-    console.log(JSON.stringify({ ...audioQuery, speedScale: PlayerData?.speed }));
     const stream = await got
         .post(synthesisUri, {
             searchParams: { speaker: PlayerData?.voice },
