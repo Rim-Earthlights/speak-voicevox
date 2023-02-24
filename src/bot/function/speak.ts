@@ -122,7 +122,7 @@ export async function speak(channel: VoiceBasedChannel, message: string): Promis
     const stream = await got
         .post(synthesisUri, {
             searchParams: { speaker: PlayerData?.voice },
-            json: audioQuery,
+            json: { ...audioQuery, speedScale: PlayerData?.speed },
             responseType: 'buffer'
         })
         .buffer();
