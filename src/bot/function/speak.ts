@@ -15,10 +15,10 @@ import { Readable } from 'stream';
 import { AudioResponse, SpeakersResponse } from '../../interface/audioResponse';
 
 export class Speaker {
-    static player: { id: string; voice: number; player: AudioPlayer }[] = [];
+    static player: { id: string; voice: number; speed: number; player: AudioPlayer }[] = [];
 }
 
-async function updateAudioPlayer(gid: string, voice?: number): Promise<AudioPlayer> {
+async function updateAudioPlayer(gid: string, voice?: number, speed?: number): Promise<AudioPlayer> {
     const PlayerData = Speaker.player.find((p) => p.id === gid);
 
     if (PlayerData) {
@@ -34,6 +34,7 @@ async function updateAudioPlayer(gid: string, voice?: number): Promise<AudioPlay
     const p = {
         id: gid,
         voice: voice ? voice : 3,
+        speed: speed ? speed : 1.0,
         player: createAudioPlayer({
             behaviors: {
                 noSubscriber: NoSubscriberBehavior.Pause
@@ -51,8 +52,8 @@ async function removeAudioPlayer(gid: string): Promise<void> {
     }
 }
 
-export async function ready(channel: VoiceBasedChannel, voice: number): Promise<void> {
-    await updateAudioPlayer(channel.guild.id, voice);
+export async function ready(channel: VoiceBasedChannel, voice: number, speed?: number): Promise<void> {
+    await updateAudioPlayer(channel.guild.id, voice, speed);
 
     const speakersUri = `http://127.0.0.1:50021/speakers`;
     const speakers = (await got.get(speakersUri).json()) as SpeakersResponse[];
@@ -114,9 +115,9 @@ export async function speak(channel: VoiceBasedChannel, message: string): Promis
     const saveFileName = dayjs().format('YYYY-MM-DD_HH-mm-ss.wav');
     const PlayerData = Speaker.player.find((p) => p.id === channel.guild.id);
 
-    const audioQuery = await got
+    const audioQuery = (await got
         .post(audioQueryUri, { searchParams: { text: message, speaker: PlayerData?.voice } })
-        .json();
+        .json()) as AudioResponse;
     console.log(JSON.stringify(audioQuery));
     const stream = await got
         .post(synthesisUri, {

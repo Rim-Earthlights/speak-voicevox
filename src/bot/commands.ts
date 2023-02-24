@@ -18,12 +18,18 @@ export async function commandSelector(message: Message) {
         case 'speak': {
             const channel = message.member?.voice.channel;
             const voiceType = Number(content[0]);
-            let result;
+            const speedSlace = Number(content[1]);
+            let voice, speed;
             console.log(voiceType);
             if (voiceType <= 0 || Number.isNaN(voiceType)) {
-                result = 0;
+                voice = 0;
             } else {
-                result = voiceType;
+                voice = voiceType;
+            }
+            if (speedSlace <= 0 || Number.isNaN(speedSlace)) {
+                speed = 1.2;
+            } else {
+                speed = speedSlace;
             }
 
             if (!channel) {
@@ -36,7 +42,7 @@ export async function commandSelector(message: Message) {
                 return;
             }
 
-            await BotFunctions.Speak.ready(channel, result);
+            await BotFunctions.Speak.ready(channel, voice);
             break;
         }
         case 'discon': {
