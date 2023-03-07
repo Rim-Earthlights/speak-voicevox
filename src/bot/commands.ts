@@ -11,10 +11,6 @@ export async function commandSelector(message: Message) {
     const command = content[0];
     content.shift();
     switch (command) {
-        case 'debug': {
-            message.reply('デバッグコマンド');
-            break;
-        }
         case 'speak': {
             const channel = message.member?.voice.channel;
             const voiceType = Number(content[0]);
