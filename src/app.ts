@@ -8,13 +8,13 @@ import {
     SlashCommandBuilder,
     VoiceBasedChannel
 } from 'discord.js';
-import { commandSelector } from './bot/commands';
+import { commandSelector } from './bot/commands.js';
 import 'dayjs/locale/ja';
-import { DISCORD_CLIENT } from './constant/constants';
-import { CONFIG } from './config/config';
-import * as logger from './common/logger';
-import { TypeOrm } from './model/typeorm/typeorm';
-import { speak, Speaker } from './bot/function/speak';
+import { DISCORD_CLIENT } from './constant/constants.js';
+import { CONFIG } from './config/config.js';
+import * as logger from './common/logger.js';
+import { TypeOrm } from './model/typeorm/typeorm.js';
+import { speak, Speaker } from './bot/function/speak.js';
 
 /**
  * =======================

@@ -37,6 +37,6 @@
     "lint": "yarn run eslint src/**/*.ts",
     "dev": "yarn run nodemon -x \"npm run dist\" -w src/app.ts -e ts,json",
     "compile": "yarn run tsc",
-    "dist": "node --experimental-loader=ts-node/esm --es-module-specifier-resolution=node src/app.ts"
+    "dist": "node --loader ts-node/esm --es-module-specifier-resolution=node src/app.ts"
   }
 }

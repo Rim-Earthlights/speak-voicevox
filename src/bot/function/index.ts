@@ -1,1 +1,1 @@
-export * as Speak from './speak';
+export * as Speak from './speak.js';
