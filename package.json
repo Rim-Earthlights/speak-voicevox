@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@discordjs/voice": "^0.14.0",
+    "@discordjs/voice": "0.15.0",
     "@types/axios": "^0.14.0",
     "@types/got": "^9.6.12",
     "@types/mz": "^2.7.4",
