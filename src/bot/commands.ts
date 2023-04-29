@@ -23,7 +23,7 @@ export async function commandSelector(message: Message) {
                 voice = voiceType;
             }
             if (speedSlace <= 0 || Number.isNaN(speedSlace)) {
-                speed = 1.1;
+                speed = 1.0;
             } else {
                 speed = speedSlace;
             }

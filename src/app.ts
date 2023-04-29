@@ -6,7 +6,8 @@ import {
     REST,
     Routes,
     SlashCommandBuilder,
-    VoiceBasedChannel
+    VoiceBasedChannel,
+    VoiceChannel
 } from 'discord.js';
 import { commandSelector } from './bot/commands.js';
 import 'dayjs/locale/ja';
@@ -15,6 +16,7 @@ import { CONFIG } from './config/config.js';
 import * as logger from './common/logger.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
 import { speak, Speaker } from './bot/function/speak.js';
+import { getVoiceConnection } from '@discordjs/voice';
 
 /**
  * =======================
@@ -92,11 +94,25 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
     }
 });
 
-DISCORD_CLIENT.on('channelDelete', async (message: Channel | PartialDMChannel) => {
-    if (message.type === ChannelType.GuildVoice) {
-        const p = Speaker.player.find((p) => p.id === message.guild.id);
-        if (p) {
-            Speaker.player = Speaker.player.filter((p) => p.id !== message.guild.id);
+DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {
+    if (oldState != null) {
+        const vc = oldState.channel as VoiceChannel;
+        if (vc.members.size === vc.members.filter((m) => m.user.bot).size) {
+            if (vc.members.find((m) => m.id === DISCORD_CLIENT?.user?.id)) {
+                const connection = getVoiceConnection(oldState.guild.id);
+                try {
+                    if (connection) {
+                        connection.destroy();
+                    }
+                    const speaker = Speaker.player.find((p) => p.id === oldState.guild.id);
+                    if (speaker) {
+                        Speaker.player = Speaker.player.filter((p) => p.id !== oldState.guild.id);
+                    }
+                } catch (e) {
+                    const error = e as Error;
+                    logger.error(oldState.guild.id, 'voiceStateUpdate', error.message);
+                }
+            }
         }
     }
 });
