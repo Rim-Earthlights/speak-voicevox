@@ -95,23 +95,52 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
 });
 
 DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {
-    if (oldState != null) {
+    if (oldState.channelId === newState.channelId) {
+        return;
+    }
+
+    if (newState.channelId === null) {
+        console.log('left');
         const vc = oldState.channel as VoiceChannel;
-        if (vc.members.size === vc.members.filter((m) => m.user.bot).size) {
-            if (vc.members.find((m) => m.id === DISCORD_CLIENT?.user?.id)) {
-                const connection = getVoiceConnection(oldState.guild.id);
-                try {
-                    if (connection) {
-                        connection.destroy();
-                    }
-                    const speaker = Speaker.player.find((p) => p.id === oldState.guild.id);
-                    if (speaker) {
-                        Speaker.player = Speaker.player.filter((p) => p.id !== oldState.guild.id);
-                    }
-                } catch (e) {
-                    const error = e as Error;
-                    logger.error(oldState.guild.id, 'voiceStateUpdate', error.message);
+        if (vc == null || vc.members.size === 0) {
+            return;
+        }
+        const bot = vc.members.filter((m) => m.user.bot);
+        if (bot.size === vc.members.size) {
+            const connection = getVoiceConnection(oldState.guild.id);
+            try {
+                if (connection) {
+                    connection.destroy();
                 }
+                const speaker = Speaker.player.find((p) => p.id === oldState.guild.id);
+                if (speaker) {
+                    Speaker.player = Speaker.player.filter((p) => p.id !== oldState.guild.id);
+                }
+            } catch (e) {
+                const error = e as Error;
+                logger.error(oldState.guild.id, 'voiceStateUpdate', error.message);
+            }
+        }
+    } else if (oldState.channelId !== null) {
+        console.log('moved');
+        const vc = oldState.channel as VoiceChannel;
+        if (vc == null || vc.members.size === 0) {
+            return;
+        }
+        const bot = vc.members.filter((m) => m.user.bot);
+        if (bot.size === vc.members.size) {
+            const connection = getVoiceConnection(oldState.guild.id);
+            try {
+                if (connection) {
+                    connection.destroy();
+                }
+                const speaker = Speaker.player.find((p) => p.id === oldState.guild.id);
+                if (speaker) {
+                    Speaker.player = Speaker.player.filter((p) => p.id !== oldState.guild.id);
+                }
+            } catch (e) {
+                const error = e as Error;
+                logger.error(oldState.guild.id, 'voiceStateUpdate', error.message);
             }
         }
     }
