@@ -100,7 +100,6 @@ DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {
     }
 
     if (newState.channelId === null) {
-        console.log('left');
         const vc = oldState.channel as VoiceChannel;
         if (vc == null || vc.members.size === 0) {
             return;
@@ -122,7 +121,6 @@ DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {
             }
         }
     } else if (oldState.channelId !== null) {
-        console.log('moved');
         const vc = oldState.channel as VoiceChannel;
         if (vc == null || vc.members.size === 0) {
             return;
