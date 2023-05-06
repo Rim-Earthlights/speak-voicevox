@@ -11,7 +11,7 @@ export class TypeOrm {
         port: CONFIG.DB.PORT,
         logging: false, // SQLログ
         database: CONFIG.DB.DATABASE,
-        synchronize: true, // DBとのスキーマ同期(開発用)
+        synchronize: false, // DBとのスキーマ同期(開発用)
         dropSchema: false, // スキーマ削除(開発用)
         charset: 'utf8mb4',
         entities: [] // 利用するエンティティ。パスでの指定も可能
