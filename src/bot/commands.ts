@@ -17,20 +17,6 @@ export async function commandSelector(message: Message) {
     switch (command) {
         case 'speak': {
             const channel = message.member?.voice.channel;
-            const voiceType = Number(content[0]);
-            const speedSlace = Number(content[1]);
-            let voice, speed;
-            console.log(voiceType);
-            if (voiceType <= 0 || Number.isNaN(voiceType)) {
-                voice = 0;
-            } else {
-                voice = voiceType;
-            }
-            if (speedSlace <= 0 || Number.isNaN(speedSlace)) {
-                speed = 1.0;
-            } else {
-                speed = speedSlace;
-            }
 
             if (!channel) {
                 const send = new EmbedBuilder()

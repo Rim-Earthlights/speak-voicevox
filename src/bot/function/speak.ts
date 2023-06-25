@@ -1,12 +1,15 @@
 import {
     AudioPlayer,
+    AudioPlayerStatus,
     createAudioPlayer,
     createAudioResource,
     DiscordGatewayAdapterCreator,
+    entersState,
     getVoiceConnection,
     joinVoiceChannel,
     NoSubscriberBehavior,
-    StreamType
+    StreamType,
+    VoiceConnection
 } from '@discordjs/voice';
 import { EmbedBuilder, VoiceBasedChannel, VoiceChannel } from 'discord.js';
 import got from 'got';
@@ -14,6 +17,7 @@ import { Readable } from 'stream';
 import { AudioResponse, SpeakersResponse } from '../../interface/audioResponse';
 import { UsersRepository } from '../../model/repository/usersRepository';
 import { findVoiceFromId } from '../../common/common';
+import Connection from 'mysql2/typings/mysql/lib/Connection';
 
 export class Speaker {
     static player: Player[] = [];
@@ -21,15 +25,15 @@ export class Speaker {
 
 interface Player {
     guild_id: string;
+    connection: VoiceConnection;
     player: AudioPlayer;
+    status: AudioPlayerStatus;
     chat: ChatData[];
 }
 interface ChatData {
     user_id: string;
     channel: VoiceBasedChannel;
-    voiceId: number;
-    speed: number;
-    message: string;
+    message: Buffer;
 }
 
 /**
@@ -40,28 +44,31 @@ interface ChatData {
  * @param speed
  * @returns
  */
-async function updateAudioPlayer(gid: string): Promise<Player> {
+async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player> {
     const PlayerData = Speaker.player.find((p) => p.guild_id === gid);
 
     if (PlayerData) {
         const index = Speaker.player.findIndex((p) => p === PlayerData);
-
-        Speaker.player[index].player = createAudioPlayer({
-            behaviors: {
-                noSubscriber: NoSubscriberBehavior.Pause
-            }
-        });
         return Speaker.player[index];
     }
     const p = {
         guild_id: gid,
+        connection: joinVoiceChannel({
+            adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
+            channelId: channel.id,
+            guildId: channel.guild.id,
+            selfDeaf: true,
+            selfMute: false
+        }),
         player: createAudioPlayer({
             behaviors: {
                 noSubscriber: NoSubscriberBehavior.Pause
             }
         }),
+        status: AudioPlayerStatus.Idle,
         chat: []
     };
+    p.connection.subscribe(p.player);
     const index = Speaker.player.push(p);
     return Speaker.player[index];
 }
@@ -78,8 +85,6 @@ async function removeAudioPlayer(gid: string): Promise<void> {
 }
 
 export async function ready(channel: VoiceBasedChannel, uid: string): Promise<void> {
-    await updateAudioPlayer(channel.guild.id);
-
     const usersRepository = new UsersRepository();
     const user = await usersRepository.get(uid);
 
@@ -102,20 +107,10 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
             .post(`http://127.0.0.1:50021/initialize_speaker`, { searchParams: { speaker: user.voice_id } })
             .json();
     }
-
-    const vc = getVoiceConnection(channel.guild.id);
-
     const voiceName = await findVoiceFromId(user.voice_id);
 
-    const connection = vc
-        ? vc
-        : joinVoiceChannel({
-              adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
-              channelId: channel.id,
-              guildId: channel.guild.id,
-              selfDeaf: true,
-              selfMute: false
-          });
+    const p = await updateAudioPlayer(channel.guild.id, channel);
+
     const send = new EmbedBuilder()
         .setColor('#00cc88')
         .setAuthor({ name: `読み上げちゃん: ${voiceName}` })
@@ -138,13 +133,33 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
         return;
     }
 
-    const PlayerData = await updateAudioPlayer(channel.guild.id);
+    if (message.includes('http')) {
+        message = 'URLです';
+    }
+
+    if (message.length > 200) {
+        message = '長文省略';
+    }
+
+    const audioQueryUri = `http://127.0.0.1:50021/audio_query`;
+    const synthesisUri = `http://127.0.0.1:50021/synthesis`;
+
+    const audioQuery = (await got
+        .post(audioQueryUri, { searchParams: { text: message, speaker: user.voice_id } })
+        .json()) as AudioResponse;
+    const stream = await got
+        .post(synthesisUri, {
+            searchParams: { speaker: user.voice_id },
+            json: { ...audioQuery, speedScale: user.voice_speed },
+            responseType: 'buffer'
+        })
+        .buffer();
+
+    const PlayerData = await updateAudioPlayer(channel.guild.id, channel);
     PlayerData.chat.push({
         user_id: uid,
         channel: channel,
-        voiceId: user.voice_id,
-        speed: user.voice_speed,
-        message: message
+        message: stream
     });
 }
 
@@ -153,51 +168,29 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
  */
 export async function speak(): Promise<void> {
     Speaker.player.map(async (speaker) => {
-        const { guild_id, player, chat } = speaker;
-        const vc = getVoiceConnection(guild_id);
+        const { player, chat } = speaker;
+
+        if (speaker.status === AudioPlayerStatus.Playing) {
+            return;
+        }
+
+        if (player.state.status !== AudioPlayerStatus.Idle) {
+            return;
+        }
 
         const chatData = chat.shift();
-
         if (!chatData) {
             return;
         }
 
-        const connection = vc
-            ? vc
-            : joinVoiceChannel({
-                  adapterCreator: chatData.channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
-                  channelId: chatData.channel.id,
-                  guildId: guild_id,
-                  selfDeaf: true,
-                  selfMute: false
-              });
+        speaker.status = AudioPlayerStatus.Playing;
 
-        if (chatData.message.includes('http')) {
-            chatData.message = 'URLです';
-        }
+        const resource = createAudioResource(Readable.from(chatData.message), { inputType: StreamType.Arbitrary });
+        player.play(resource);
 
-        if (chatData.message.length > 200) {
-            chatData.message = '長文省略';
-        }
-
-        const audioQueryUri = `http://127.0.0.1:50021/audio_query`;
-        const synthesisUri = `http://127.0.0.1:50021/synthesis`;
-
-        const audioQuery = (await got
-            .post(audioQueryUri, { searchParams: { text: chatData.message, speaker: chatData.voiceId } })
-            .json()) as AudioResponse;
-        const stream = await got
-            .post(synthesisUri, {
-                searchParams: { speaker: chatData.voiceId },
-                json: { ...audioQuery, speedScale: chatData.speed },
-                responseType: 'buffer'
-            })
-            .buffer();
-
-        const p = await updateAudioPlayer(guild_id);
-        const resource = createAudioResource(Readable.from(stream), { inputType: StreamType.Arbitrary });
-        p.player.play(resource);
-        connection.subscribe(player);
+        Promise.all([entersState(player, AudioPlayerStatus.Playing, 10 * 1000)]).then(function () {
+            speaker.status = AudioPlayerStatus.Idle;
+        });
     });
 }
 

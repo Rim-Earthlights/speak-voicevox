@@ -17,6 +17,7 @@ import * as logger from './common/logger.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
 import { addQueue, Speaker } from './bot/function/speak.js';
 import { getVoiceConnection } from '@discordjs/voice';
+import { initJob } from './job/job.js';
 
 /**
  * =======================
@@ -55,6 +56,7 @@ DISCORD_CLIENT.once('ready', async () => {
         .catch((e) => {
             logger.error('system', 'db-init', e);
         });
+    await initJob();
     console.log('==================================================');
     logger.info(undefined, 'ready', `discord bot logged in: ${DISCORD_CLIENT.user?.tag}`);
 });
@@ -68,14 +70,13 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
         return;
     }
 
-    logger.info(
-        message.guild ? message.guild.id : 'dm',
-        'message-received',
-        `author: ${message.author.tag}, content: ${message.content}`
-    );
-
     // command
     if (message.content.startsWith('.')) {
+        await logger.info(
+            message.guild ? message.guild.id : 'dm',
+            'command-received',
+            `author: ${message.author.tag}, content: ${message.content}`
+        );
         await commandSelector(message);
         return;
     }
@@ -89,6 +90,11 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
 
     if (message.channel.type === ChannelType.GuildVoice) {
         if (message.mentions.users.size === 0 && message.mentions.roles.size === 0) {
+            await logger.info(
+                message.guild ? message.guild.id : 'dm',
+                'message-received',
+                `author: ${message.author.tag}, content: ${message.content}`
+            );
             await addQueue(message.channel as VoiceBasedChannel, message.content, message.author.id);
         }
     }
