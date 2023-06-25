@@ -14,6 +14,15 @@ export class TypeOrm {
         synchronize: false, // DBとのスキーマ同期(開発用)
         dropSchema: false, // スキーマ削除(開発用)
         charset: 'utf8mb4',
-        entities: [] // 利用するエンティティ。パスでの指定も可能
+        entities: [
+            Models.Users,
+            Models.Gacha,
+            Models.Music,
+            Models.MusicInfo,
+            Models.Playlist,
+            Models.Item,
+            Models.Guild,
+            Models.ItemRank
+        ] // 利用するエンティティ。パスでの指定も可能
     });
 }
