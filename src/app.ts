@@ -15,8 +15,9 @@ import { DISCORD_CLIENT } from './constant/constants.js';
 import { CONFIG } from './config/config.js';
 import * as logger from './common/logger.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
-import { speak, Speaker } from './bot/function/speak.js';
+import { addQueue, Speaker } from './bot/function/speak.js';
 import { getVoiceConnection } from '@discordjs/voice';
+import { initJob } from './job/job.js';
 
 /**
  * =======================
@@ -55,6 +56,7 @@ DISCORD_CLIENT.once('ready', async () => {
         .catch((e) => {
             logger.error('system', 'db-init', e);
         });
+    await initJob();
     console.log('==================================================');
     logger.info(undefined, 'ready', `discord bot logged in: ${DISCORD_CLIENT.user?.tag}`);
 });
@@ -68,18 +70,17 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
         return;
     }
 
-    logger.info(
-        message.guild ? message.guild.id : 'dm',
-        'message-received',
-        `author: ${message.author.tag}, content: ${message.content}`
-    );
-
     // command
     if (message.content.startsWith('.')) {
+        await logger.info(
+            message.guild ? message.guild.id : 'dm',
+            'command-received',
+            `author: ${message.author.tag}, content: ${message.content}`
+        );
         await commandSelector(message);
         return;
     }
-    const state = Speaker.player.find((s) => s.id === message.guild?.id);
+    const state = Speaker.player.find((s) => s.guild_id === message.guild?.id);
     if (!state) {
         return;
     }
@@ -89,7 +90,12 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
 
     if (message.channel.type === ChannelType.GuildVoice) {
         if (message.mentions.users.size === 0 && message.mentions.roles.size === 0) {
-            await speak(message.channel as VoiceBasedChannel, message.content);
+            await logger.info(
+                message.guild ? message.guild.id : 'dm',
+                'message-received',
+                `author: ${message.author.tag}, content: ${message.content}`
+            );
+            await addQueue(message.channel as VoiceBasedChannel, message.content, message.author.id);
         }
     }
 });
@@ -111,9 +117,9 @@ DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {
                 if (connection) {
                     connection.destroy();
                 }
-                const speaker = Speaker.player.find((p) => p.id === oldState.guild.id);
+                const speaker = Speaker.player.find((p) => p.guild_id === oldState.guild.id);
                 if (speaker) {
-                    Speaker.player = Speaker.player.filter((p) => p.id !== oldState.guild.id);
+                    Speaker.player = Speaker.player.filter((p) => p.guild_id !== oldState.guild.id);
                 }
             } catch (e) {
                 const error = e as Error;
@@ -132,9 +138,9 @@ DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {
                 if (connection) {
                     connection.destroy();
                 }
-                const speaker = Speaker.player.find((p) => p.id === oldState.guild.id);
+                const speaker = Speaker.player.find((p) => p.guild_id === oldState.guild.id);
                 if (speaker) {
-                    Speaker.player = Speaker.player.filter((p) => p.id !== oldState.guild.id);
+                    Speaker.player = Speaker.player.filter((p) => p.guild_id !== oldState.guild.id);
                 }
             } catch (e) {
                 const error = e as Error;
