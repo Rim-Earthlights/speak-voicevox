@@ -17,7 +17,6 @@ import { Readable } from 'stream';
 import { AudioResponse, SpeakersResponse } from '../../interface/audioResponse';
 import { UsersRepository } from '../../model/repository/usersRepository';
 import { findVoiceFromId } from '../../common/common';
-import Connection from 'mysql2/typings/mysql/lib/Connection';
 
 export class Speaker {
     static player: Player[] = [];
@@ -70,7 +69,7 @@ async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promi
     };
     p.connection.subscribe(p.player);
     const index = Speaker.player.push(p);
-    return Speaker.player[index];
+    return Speaker.player[index - 1];
 }
 
 /**
