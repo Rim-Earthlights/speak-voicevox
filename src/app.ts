@@ -18,6 +18,7 @@ import { TypeOrm } from './model/typeorm/typeorm.js';
 import { addQueue, Speaker } from './bot/function/speak.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { initJob } from './job/job.js';
+import { joinVoiceChannel, leftVoiceChannel } from './bot/function/room.js';
 
 /**
  * =======================
@@ -106,46 +107,11 @@ DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {
     }
 
     if (newState.channelId === null) {
-        const vc = oldState.channel as VoiceChannel;
-        if (vc == null || vc.members.size === 0) {
-            return;
-        }
-        const bot = vc.members.filter((m) => m.user.bot);
-        if (bot.size === vc.members.size) {
-            const connection = getVoiceConnection(oldState.guild.id);
-            try {
-                if (connection) {
-                    connection.destroy();
-                }
-                const speaker = Speaker.player.find((p) => p.guild_id === oldState.guild.id);
-                if (speaker) {
-                    Speaker.player = Speaker.player.filter((p) => p.guild_id !== oldState.guild.id);
-                }
-            } catch (e) {
-                const error = e as Error;
-                logger.error(oldState.guild.id, 'voiceStateUpdate', error.message);
-            }
-        }
-    } else if (oldState.channelId !== null) {
-        const vc = oldState.channel as VoiceChannel;
-        if (vc == null || vc.members.size === 0) {
-            return;
-        }
-        const bot = vc.members.filter((m) => m.user.bot);
-        if (bot.size === vc.members.size) {
-            const connection = getVoiceConnection(oldState.guild.id);
-            try {
-                if (connection) {
-                    connection.destroy();
-                }
-                const speaker = Speaker.player.find((p) => p.guild_id === oldState.guild.id);
-                if (speaker) {
-                    Speaker.player = Speaker.player.filter((p) => p.guild_id !== oldState.guild.id);
-                }
-            } catch (e) {
-                const error = e as Error;
-                logger.error(oldState.guild.id, 'voiceStateUpdate', error.message);
-            }
-        }
+        await leftVoiceChannel(oldState);
+    } else if (oldState.channelId === null) {
+        await joinVoiceChannel(newState);
+    } else {
+        await leftVoiceChannel(oldState);
+        await joinVoiceChannel(newState);
     }
 });

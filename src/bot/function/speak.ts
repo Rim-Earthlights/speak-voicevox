@@ -106,13 +106,12 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
             .post(`http://127.0.0.1:50021/initialize_speaker`, { searchParams: { speaker: user.voice_id } })
             .json();
     }
-    const voiceName = await findVoiceFromId(user.voice_id);
 
     const p = await updateAudioPlayer(channel.guild.id, channel);
 
     const send = new EmbedBuilder()
         .setColor('#00cc88')
-        .setAuthor({ name: `読み上げちゃん: ${voiceName}` })
+        .setAuthor({ name: `読み上げちゃん` })
         .setTitle('読み上げを開始します')
         .setDescription('終了する際は `.discon` で終わるよ');
 
