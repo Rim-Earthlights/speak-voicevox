@@ -4,6 +4,7 @@ import { UsersRepository } from '../model/repository/usersRepository';
 import got from 'got';
 import { SpeakersResponse } from '../interface/audioResponse';
 import { findVoiceFromId } from '../common/common';
+import { CONFIG } from '../config/config';
 
 /**
  * 渡されたコマンドから処理を実行する
@@ -15,7 +16,7 @@ export async function commandSelector(message: Message) {
     const command = content[0];
     content.shift();
     switch (command) {
-        case 'speak': {
+        case CONFIG.COMMAND.SPEAK: {
             const channel = message.member?.voice.channel;
 
             if (!channel) {
@@ -31,8 +32,11 @@ export async function commandSelector(message: Message) {
             await BotFunctions.Speak.ready(channel, message.author.id);
             break;
         }
-        case 'speaker-config':
-        case 'spcon': {
+        case CONFIG.COMMAND.SPEAKER_CONFIG.SPEAKER_CONFIG:
+        case CONFIG.COMMAND.SPEAKER_CONFIG.SPEAKER_CONFIG_SHORT: {
+            if (!CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
+                return;
+            }
             const usersRepository = new UsersRepository();
             const user = await usersRepository.get(message.author.id);
 
@@ -67,7 +71,7 @@ export async function commandSelector(message: Message) {
 
             break;
         }
-        case 'discon': {
+        case CONFIG.COMMAND.DISCONNECT: {
             const channel = message.member?.voice.channel;
             if (!channel) {
                 return;
