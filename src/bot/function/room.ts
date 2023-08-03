@@ -36,16 +36,16 @@ export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
             return;
         }
 
-        const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
-        if (speaker) {
-            if (voiceState.member) {
-                await addQueue(
-                    voiceState.channel as VoiceChannel,
-                    `${voiceState.member.displayName}さんが退室しました`,
-                    DISCORD_CLIENT.user!.id
-                );
-            }
-        }
+        // const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+        // if (speaker) {
+        //     if (voiceState.member) {
+        //         await addQueue(
+        //             voiceState.channel as VoiceChannel,
+        //             `${voiceState.member.displayName}さんが退室しました`,
+        //             DISCORD_CLIENT.user!.id
+        //         );
+        //     }
+        // }
     }
 }
 
@@ -66,14 +66,14 @@ export async function joinVoiceChannel(voiceState: VoiceState): Promise<void> {
         return;
     }
 
-    const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
-    if (speaker) {
-        if (voiceState.member) {
-            await addQueue(
-                voiceState.channel as VoiceChannel,
-                `${voiceState.member.displayName}さんが入室しました`,
-                DISCORD_CLIENT.user!.id
-            );
-        }
-    }
+    // const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+    // if (speaker) {
+    //     if (voiceState.member) {
+    //         await addQueue(
+    //             voiceState.channel as VoiceChannel,
+    //             `${voiceState.member.displayName}さんが入室しました`,
+    //             DISCORD_CLIENT.user!.id
+    //         );
+    //     }
+    // }
 }
