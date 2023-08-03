@@ -24,6 +24,7 @@ export class Speaker {
 
 interface Player {
     guild_id: string;
+    channel_id: string;
     connection: VoiceConnection;
     player: AudioPlayer;
     status: AudioPlayerStatus;
@@ -38,9 +39,7 @@ interface ChatData {
 /**
  * プレイヤーを更新する
  * @param gid
- * @param uid
- * @param voice
- * @param speed
+ * @param cid
  * @returns
  */
 async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player> {
@@ -52,6 +51,7 @@ async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promi
     }
     const p = {
         guild_id: gid,
+        channel_id: channel.id,
         connection: joinVoiceChannel({
             adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
             channelId: channel.id,
@@ -119,6 +119,8 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
 }
 
 export async function addQueue(channel: VoiceBasedChannel, message: string, uid: string): Promise<void> {
+    const PlayerData = await updateAudioPlayer(channel.guild.id, channel);
+
     const usersRepository = new UsersRepository();
     const user = await usersRepository.get(uid);
 
@@ -139,6 +141,10 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
         message = '長文省略';
     }
 
+    if (PlayerData.channel_id !== channel.id) {
+        return;
+    }
+
     const audioQueryUri = `http://127.0.0.1:50021/audio_query`;
     const synthesisUri = `http://127.0.0.1:50021/synthesis`;
 
@@ -153,7 +159,7 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
         })
         .buffer();
 
-    const PlayerData = await updateAudioPlayer(channel.guild.id, channel);
+
     PlayerData.chat.push({
         user_id: uid,
         channel: channel,
