@@ -31,7 +31,8 @@ export async function commandSelector(message: Message) {
             await BotFunctions.Speak.ready(channel, message.author.id);
             break;
         }
-        case 'speaker-config': {
+        case 'speaker-config':
+        case 'spcon': {
             const usersRepository = new UsersRepository();
             const user = await usersRepository.get(message.author.id);
 
