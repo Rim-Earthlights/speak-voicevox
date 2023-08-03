@@ -81,11 +81,15 @@ async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promi
  * プレイヤーを削除する
  * @param gid
  */
-async function removeAudioPlayer(gid: string): Promise<void> {
-    const PlayerData = Speaker.player.find((p) => p.guild_id === gid);
+async function removeAudioPlayer(channel: VoiceBasedChannel): Promise<boolean> {
+    const PlayerData = Speaker.player.find((p) => p.guild_id === channel.guild.id);
     if (PlayerData) {
-        Speaker.player = Speaker.player.filter((p) => p.guild_id !== gid);
+        if (PlayerData.channel_id !== channel.id) {
+            return false;
+        }
+        Speaker.player = Speaker.player.filter((p) => p.guild_id !== channel.guild.id);
     }
+    return true;
 }
 
 export async function ready(channel: VoiceBasedChannel, uid: string): Promise<void> {
@@ -217,7 +221,16 @@ export async function speak(): Promise<void> {
 }
 
 export async function disconnect(channel: VoiceBasedChannel): Promise<void> {
-    await removeAudioPlayer(channel.guild.id);
+    const result = await removeAudioPlayer(channel);
+
+    if (!result) {
+        const send = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle(`エラー`)
+            .setDescription(`読み上げちゃんは他の場所で起動中だよ`);
+        await channel.send({ embeds: [send] });
+        return;
+    }
 
     const connection = getVoiceConnection(channel.guild.id);
     if (connection) {
@@ -229,5 +242,5 @@ export async function disconnect(channel: VoiceBasedChannel): Promise<void> {
         .setTitle('読み上げ終了')
         .setDescription('またね！');
 
-    (channel as VoiceChannel).send({ embeds: [send] });
+    await (channel as VoiceChannel).send({ embeds: [send] });
 }
