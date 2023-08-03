@@ -72,17 +72,6 @@ async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promi
     const PlayerData = Speaker.player.find((p) => p.guild_id === gid);
 
     if (PlayerData) {
-        if (PlayerData.channel_id !== channel.id) {
-            PlayerData.channel_id = channel.id;
-            PlayerData.connection = joinVoiceChannel({
-                adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
-                channelId: channel.id,
-                guildId: channel.guild.id,
-                selfDeaf: true,
-                selfMute: false
-            });
-            PlayerData.connection.subscribe(PlayerData.player);
-        }
         return PlayerData;
     }
     return null;
