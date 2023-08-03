@@ -36,18 +36,9 @@ interface ChatData {
     message: Buffer;
 }
 
-/**
- * プレイヤーを更新する
- * @param gid
- * @param cid
- * @returns
- */
-async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player> {
-    const PlayerData = Speaker.player.find((p) => p.guild_id === gid);
-
-    if (PlayerData) {
-        const index = Speaker.player.findIndex((p) => p === PlayerData);
-        return Speaker.player[index];
+async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player | null> {
+    if (Speaker.player.find((p) => p.guild_id === gid)) {
+        return null;
     }
     const p = {
         guild_id: gid,
@@ -70,6 +61,31 @@ async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promi
     p.connection.subscribe(p.player);
     const index = Speaker.player.push(p);
     return Speaker.player[index - 1];
+}
+/**
+ * プレイヤーを更新する
+ * @param gid
+ * @param cid
+ * @returns
+ */
+async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player | null> {
+    const PlayerData = Speaker.player.find((p) => p.guild_id === gid);
+
+    if (PlayerData) {
+        if (PlayerData.channel_id !== channel.id) {
+            PlayerData.channel_id = channel.id;
+            PlayerData.connection = joinVoiceChannel({
+                adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
+                channelId: channel.id,
+                guildId: channel.guild.id,
+                selfDeaf: true,
+                selfMute: false
+            });
+            PlayerData.connection.subscribe(PlayerData.player);
+        }
+        return PlayerData;
+    }
+    return null;
 }
 
 /**
@@ -107,7 +123,16 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
             .json();
     }
 
-    const p = await updateAudioPlayer(channel.guild.id, channel);
+    const p = await initAudioPlayer(channel.guild.id, channel);
+
+    if (!p) {
+        const send = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle(`エラー`)
+            .setDescription(`他の場所で読み上げちゃんが起動中だよ`);
+        channel.send({ embeds: [send] });
+        return;
+    }
 
     const send = new EmbedBuilder()
         .setColor('#00cc88')
@@ -139,6 +164,10 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
 
     if (message.length > 200) {
         message = '長文省略';
+    }
+
+    if (!PlayerData) {
+        return;
     }
 
     if (PlayerData.channel_id !== channel.id) {
