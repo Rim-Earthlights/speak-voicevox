@@ -1,0 +1,9 @@
+{
+    "SPEAK": "speak",
+    "SPEAKER_CONFIG": {
+        "ENABLE": true,
+        "SPEAKER_CONFIG": "speaker-config",
+        "SPEAKER_CONFIG_SHORT": "spcon"
+    },
+    "DISCONNECT": "discon"
+}

@@ -14,9 +14,9 @@ import {
 import { EmbedBuilder, VoiceBasedChannel, VoiceChannel } from 'discord.js';
 import got from 'got';
 import { Readable } from 'stream';
-import { AudioResponse, SpeakersResponse } from '../../interface/audioResponse';
+import { AudioResponse } from '../../interface/audioResponse';
 import { UsersRepository } from '../../model/repository/usersRepository';
-import { findVoiceFromId } from '../../common/common';
+import { CONFIG } from '../../config/config';
 
 export class Speaker {
     static player: Player[] = [];
@@ -131,7 +131,7 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
         .setColor('#00cc88')
         .setAuthor({ name: `読み上げちゃん` })
         .setTitle('読み上げを開始します')
-        .setDescription('終了する際は `.discon` で終わるよ');
+        .setDescription(`終了する際は \`${CONFIG.COMMAND.DISCONNECT}\` で終わるよ`);
 
     (channel as VoiceChannel).send({ embeds: [send] });
 }

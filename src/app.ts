@@ -1,24 +1,37 @@
 import {
-    Channel,
     ChannelType,
     Message,
-    PartialDMChannel,
     REST,
-    Routes,
     SlashCommandBuilder,
     VoiceBasedChannel,
-    VoiceChannel
 } from 'discord.js';
 import { commandSelector } from './bot/commands.js';
 import 'dayjs/locale/ja';
 import { DISCORD_CLIENT } from './constant/constants.js';
-import { CONFIG } from './config/config.js';
+import { CONFIG, CommandConfig } from './config/config.js';
 import * as logger from './common/logger.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
 import { addQueue, Speaker } from './bot/function/speak.js';
-import { getVoiceConnection } from '@discordjs/voice';
 import { initJob } from './job/job.js';
 import { joinVoiceChannel, leftVoiceChannel } from './bot/function/room.js';
+import { fs } from 'mz';
+
+// read config file
+const json = process.argv[2];
+if (!json) {
+    logger.error('system', 'app', 'config file not found');
+    process.exit(1);
+}
+
+const data = JSON.parse(fs.readFileSync(json, 'utf8')) as CommandConfig;
+
+if (!data.COMMAND.SPEAK) {
+    logger.error('system', 'app', 'config file not found');
+    process.exit(1);
+}
+
+CONFIG.TOKEN = data.TOKEN;
+CONFIG.COMMAND = data.COMMAND;
 
 /**
  * =======================

@@ -2,3 +2,4 @@ voicevox-engine
 voicevox_*
 src/config/config.ts
 node_modules
+src/config/*.json

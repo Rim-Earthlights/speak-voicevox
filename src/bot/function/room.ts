@@ -22,9 +22,9 @@ export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
             if (connection) {
                 connection.destroy();
             }
-            const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+            const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id && p.channel_id === vc.id);
             if (speaker) {
-                Speaker.player = Speaker.player.filter((p) => p.guild_id !== voiceState.guild.id);
+                Speaker.player = Speaker.player.filter((p) => p.guild_id !== voiceState.guild.id && p.channel_id !== vc.id);
             }
         } catch (e) {
             const error = e as Error;
