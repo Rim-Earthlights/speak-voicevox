@@ -17,3 +17,16 @@ export const CONFIG = {
         DISCONNECT: 'discon',
     }
 };
+
+export type CommandConfig = {
+    TOKEN: string;
+    COMMAND: {
+        SPEAK: string;
+        SPEAKER_CONFIG: {
+            ENABLE: boolean;
+            SPEAKER_CONFIG: string;
+            SPEAKER_CONFIG_SHORT: string;
+        },
+        DISCONNECT: string;
+    }
+}
