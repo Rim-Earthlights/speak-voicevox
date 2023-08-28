@@ -1,6 +1,4 @@
 import { VoiceChannel, VoiceState } from 'discord.js';
-import { DISCORD_CLIENT } from '../../constant/constants';
-import { Guild } from '../../model/models';
 import { Speaker, addQueue } from './speak';
 import { getVoiceConnection } from '@discordjs/voice';
 import * as logger from '../../common/logger';
@@ -19,12 +17,12 @@ export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
     if (bot.size === vc.members.size) {
         const connection = getVoiceConnection(voiceState.guild.id);
         try {
+            const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+            if (speaker) {
+                Speaker.player = Speaker.player.filter((p) => p.guild_id !== voiceState.guild.id);
+            }
             if (connection) {
                 connection.destroy();
-            }
-            const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id && p.channel_id === vc.id);
-            if (speaker) {
-                Speaker.player = Speaker.player.filter((p) => p.guild_id !== voiceState.guild.id && p.channel_id !== vc.id);
             }
         } catch (e) {
             const error = e as Error;

@@ -17,50 +17,60 @@ import { Readable } from 'stream';
 import { AudioResponse } from '../../interface/audioResponse';
 import { UsersRepository } from '../../model/repository/usersRepository';
 import { CONFIG } from '../../config/config';
+import * as logger from '../../common/logger.js';
 
-export class Speaker {
-    static player: Player[] = [];
-}
+
+export const Speaker = {
+    player: [] as Player[]
+};
 
 interface Player {
     guild_id: string;
-    channel_id: string;
+    channel: ChannelPlayer;
+}
+
+interface ChannelPlayer {
+    id: string;
     connection: VoiceConnection;
     player: AudioPlayer;
     status: AudioPlayerStatus;
     chat: ChatData[];
 }
+
 interface ChatData {
     user_id: string;
-    channel: VoiceBasedChannel;
     message: Buffer;
 }
 
 async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player | null> {
     if (Speaker.player.find((p) => p.guild_id === gid)) {
+        logger.info(gid, 'initAudioPlayer', JSON.stringify(Speaker.player.find((p) => p.guild_id === gid)));
         return null;
     }
+
     const p = {
         guild_id: gid,
-        channel_id: channel.id,
-        connection: joinVoiceChannel({
-            adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
-            channelId: channel.id,
-            guildId: channel.guild.id,
-            selfDeaf: true,
-            selfMute: false
-        }),
-        player: createAudioPlayer({
-            behaviors: {
-                noSubscriber: NoSubscriberBehavior.Pause
-            }
-        }),
-        status: AudioPlayerStatus.Idle,
-        chat: []
+        channel: {
+            id: channel.id,
+            connection: joinVoiceChannel({
+                adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
+                channelId: channel.id,
+                guildId: channel.guild.id,
+                selfDeaf: true,
+                selfMute: false
+            }),
+            player: createAudioPlayer({
+                behaviors: {
+                    noSubscriber: NoSubscriberBehavior.Pause
+                }
+            }),
+            status: AudioPlayerStatus.Idle,
+            chat: []
+        }
     };
-    p.connection.subscribe(p.player);
-    const index = Speaker.player.push(p);
-    return Speaker.player[index - 1];
+    p.channel.connection.subscribe(p.channel.player);
+    Speaker.player.push(p);
+    return Speaker.player.find(p => p.guild_id === gid)!;
 }
 /**
  * プレイヤーを更新する
@@ -68,12 +78,13 @@ async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise
  * @param cid
  * @returns
  */
-async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player | null> {
-    const PlayerData = Speaker.player.find((p) => p.guild_id === gid);
+async function getAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player | null> {
 
+    const PlayerData = Speaker.player.find((p) => p.guild_id === gid && p.channel.id === channel.id);
     if (PlayerData) {
         return PlayerData;
     }
+
     return null;
 }
 
@@ -84,9 +95,6 @@ async function updateAudioPlayer(gid: string, channel: VoiceBasedChannel): Promi
 async function removeAudioPlayer(channel: VoiceBasedChannel): Promise<boolean> {
     const PlayerData = Speaker.player.find((p) => p.guild_id === channel.guild.id);
     if (PlayerData) {
-        if (PlayerData.channel_id !== channel.id) {
-            return false;
-        }
         Speaker.player = Speaker.player.filter((p) => p.guild_id !== channel.guild.id);
     }
     return true;
@@ -131,13 +139,13 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
         .setColor('#00cc88')
         .setAuthor({ name: `読み上げちゃん` })
         .setTitle('読み上げを開始します')
-        .setDescription(`終了する際は \`${CONFIG.COMMAND.DISCONNECT}\` で終わるよ`);
+        .setDescription(`終了する際は \`.${CONFIG.COMMAND.DISCONNECT}\` で終わるよ`);
 
     (channel as VoiceChannel).send({ embeds: [send] });
 }
 
 export async function addQueue(channel: VoiceBasedChannel, message: string, uid: string): Promise<void> {
-    const PlayerData = await updateAudioPlayer(channel.guild.id, channel);
+    const PlayerData = await getAudioPlayer(channel.guild.id, channel);
 
     const usersRepository = new UsersRepository();
     const user = await usersRepository.get(uid);
@@ -163,7 +171,7 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
         return;
     }
 
-    if (PlayerData.channel_id !== channel.id) {
+    if (PlayerData.channel.id !== channel.id) {
         return;
     }
 
@@ -182,9 +190,8 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
         .buffer();
 
 
-    PlayerData.chat.push({
+    PlayerData.channel.chat.push({
         user_id: uid,
-        channel: channel,
         message: stream
     });
 }
@@ -194,36 +201,33 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
  */
 export async function speak(): Promise<void> {
     Speaker.player.map(async (speaker) => {
-        const { player, chat } = speaker;
-
-        if (speaker.status === AudioPlayerStatus.Playing) {
+        if (speaker.channel.status === AudioPlayerStatus.Playing) {
             return;
         }
 
-        if (player.state.status !== AudioPlayerStatus.Idle) {
+        if (speaker.channel.status !== AudioPlayerStatus.Idle) {
             return;
         }
 
-        const chatData = chat.shift();
+        const chatData = speaker.channel.chat.shift();
         if (!chatData) {
             return;
         }
 
-        speaker.status = AudioPlayerStatus.Playing;
+        speaker.channel.status = AudioPlayerStatus.Playing;
 
         const resource = createAudioResource(Readable.from(chatData.message), { inputType: StreamType.Arbitrary });
-        player.play(resource);
+        speaker.channel.player.play(resource);
 
-        Promise.all([entersState(player, AudioPlayerStatus.Playing, 10 * 1000)]).then(function () {
-            speaker.status = AudioPlayerStatus.Idle;
+        Promise.all([entersState(speaker.channel.player, AudioPlayerStatus.Playing, 10 * 1000)]).then(function () {
+            speaker.channel.status = AudioPlayerStatus.Idle;
         });
     });
 }
 
 export async function disconnect(channel: VoiceBasedChannel): Promise<void> {
-    const result = await removeAudioPlayer(channel);
-
-    if (!result) {
+    const playerData = await getAudioPlayer(channel.guild.id, channel);
+    if (!playerData) {
         const send = new EmbedBuilder()
             .setColor('#ff0000')
             .setTitle(`エラー`)
@@ -231,6 +235,8 @@ export async function disconnect(channel: VoiceBasedChannel): Promise<void> {
         await channel.send({ embeds: [send] });
         return;
     }
+
+    await removeAudioPlayer(channel);
 
     const connection = getVoiceConnection(channel.guild.id);
     if (connection) {

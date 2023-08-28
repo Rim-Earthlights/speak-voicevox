@@ -98,7 +98,7 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
     if (!state) {
         return;
     }
-    if (!state.player) {
+    if (!state.channel.player) {
         return;
     }
 
