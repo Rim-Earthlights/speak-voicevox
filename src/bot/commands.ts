@@ -1,10 +1,12 @@
-import { EmbedBuilder, Message } from 'discord.js';
+import { ChannelType, EmbedBuilder, Message } from 'discord.js';
 import * as BotFunctions from './function';
 import { UsersRepository } from '../model/repository/usersRepository';
 import got from 'got';
 import { SpeakersResponse } from '../interface/audioResponse';
 import { findVoiceFromId } from '../common/common';
 import { CONFIG } from '../config/config';
+import { SpeakerRepository } from '../model/repository/speakerRepository';
+import { DISCORD_CLIENT } from '../constant/constants';
 
 /**
  * 渡されたコマンドから処理を実行する
@@ -12,11 +14,30 @@ import { CONFIG } from '../config/config';
  * @param command 渡されたメッセージ
  */
 export async function commandSelector(message: Message) {
+    if (!message.guild || !DISCORD_CLIENT.user) {
+        return;
+    }
     const content = message.content.replace('.', '').trimEnd().split(' ');
     const command = content[0];
     content.shift();
     switch (command) {
         case CONFIG.COMMAND.SPEAK: {
+            const repository = new SpeakerRepository();
+            const speaker = await repository.getUnusedSpeaker(message.guild.id);
+
+            if (!speaker) {
+                const send = new EmbedBuilder()
+                    .setColor('#ff0000')
+                    .setTitle(`エラー`)
+                    .setDescription(`呼び出せるbotが見つからなかった`);
+
+                message.reply({ embeds: [send] });
+                return;
+            }
+            if (speaker.user_id !== DISCORD_CLIENT.user.id) {
+                return;
+            }
+
             const channel = message.member?.voice.channel;
 
             if (!channel) {

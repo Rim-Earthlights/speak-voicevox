@@ -18,6 +18,8 @@ import { AudioResponse } from '../../interface/audioResponse';
 import { UsersRepository } from '../../model/repository/usersRepository';
 import { CONFIG } from '../../config/config';
 import * as logger from '../../common/logger.js';
+import { SpeakerRepository } from '../../model/repository/speakerRepository';
+import { DISCORD_CLIENT } from '../../constant/constants';
 
 
 export const Speaker = {
@@ -141,6 +143,9 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
         .setTitle('読み上げを開始します')
         .setDescription(`終了する際は \`.${CONFIG.COMMAND.DISCONNECT}\` で終わるよ`);
 
+    const repository = new SpeakerRepository();
+    await repository.updateUsedSpeaker(channel.guild.id, DISCORD_CLIENT.user!.id, true);
+
     (channel as VoiceChannel).send({ embeds: [send] });
 }
 
@@ -219,7 +224,7 @@ export async function speak(): Promise<void> {
         const resource = createAudioResource(Readable.from(chatData.message), { inputType: StreamType.Arbitrary });
         speaker.channel.player.play(resource);
 
-        Promise.all([entersState(speaker.channel.player, AudioPlayerStatus.Playing, 10 * 1000)]).then(function () {
+        Promise.all([entersState(speaker.channel.player, AudioPlayerStatus.Idle, 60 * 60 * 1000)]).then(function () {
             speaker.channel.status = AudioPlayerStatus.Idle;
         });
     });
@@ -228,13 +233,11 @@ export async function speak(): Promise<void> {
 export async function disconnect(channel: VoiceBasedChannel): Promise<void> {
     const playerData = await getAudioPlayer(channel.guild.id, channel);
     if (!playerData) {
-        const send = new EmbedBuilder()
-            .setColor('#ff0000')
-            .setTitle(`エラー`)
-            .setDescription(`読み上げちゃんは他の場所で起動中だよ`);
-        await channel.send({ embeds: [send] });
         return;
     }
+
+    const repository = new SpeakerRepository();
+    await repository.updateUsedSpeaker(channel.guild.id, DISCORD_CLIENT.user!.id, false);
 
     await removeAudioPlayer(channel);
 

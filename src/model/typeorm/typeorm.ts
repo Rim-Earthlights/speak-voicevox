@@ -22,7 +22,8 @@ export class TypeOrm {
             Models.Playlist,
             Models.Item,
             Models.Guild,
-            Models.ItemRank
+            Models.ItemRank,
+            Models.Speaker
         ] // 利用するエンティティ。パスでの指定も可能
     });
 }

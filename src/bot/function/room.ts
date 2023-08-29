@@ -2,6 +2,8 @@ import { VoiceChannel, VoiceState } from 'discord.js';
 import { Speaker, addQueue } from './speak';
 import { getVoiceConnection } from '@discordjs/voice';
 import * as logger from '../../common/logger';
+import { SpeakerRepository } from '../../model/repository/speakerRepository';
+import { DISCORD_CLIENT } from '../../constant/constants';
 
 /**
  * ボイスチャンネルから切断した時の処理
@@ -24,6 +26,8 @@ export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
             if (connection) {
                 connection.destroy();
             }
+            const repository = new SpeakerRepository();
+            await repository.updateUsedSpeaker(voiceState.guild.id, DISCORD_CLIENT.user!.id, false);
         } catch (e) {
             const error = e as Error;
             logger.error(voiceState.guild.id, 'voiceStateUpdate', error.message);

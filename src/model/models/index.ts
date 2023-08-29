@@ -6,3 +6,4 @@ export { Playlist } from './playlist.js';
 export { Guild } from './guild.js';
 export { Item } from './item.js';
 export { ItemRank } from './itemRank.js';
+export { Speaker } from './speaker.js';

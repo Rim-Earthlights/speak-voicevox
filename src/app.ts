@@ -15,6 +15,7 @@ import { addQueue, Speaker } from './bot/function/speak.js';
 import { initJob } from './job/job.js';
 import { joinVoiceChannel, leftVoiceChannel } from './bot/function/room.js';
 import { fs } from 'mz';
+import { SpeakerRepository } from './model/repository/speakerRepository.js';
 
 // read config file
 const json = process.argv[2];
@@ -73,6 +74,12 @@ DISCORD_CLIENT.once('ready', async () => {
     await initJob();
     console.log('==================================================');
     logger.info(undefined, 'ready', `discord bot logged in: ${DISCORD_CLIENT.user?.tag}`);
+    const repository = new SpeakerRepository();
+    DISCORD_CLIENT.guilds.fetch().then((guilds) => {
+        guilds.forEach(async (guild) => {
+            await repository.registerSpeaker(guild.id, DISCORD_CLIENT.user!.id);
+        })
+    });
 });
 
 /**
