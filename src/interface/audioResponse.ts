@@ -27,6 +27,9 @@ export interface AudioResponse {
     kana: string;
 }
 export interface SpeakersResponse {
+    supported_features: {
+        permitted_synthesis_morphing: "ALL" | "SELF_ONLY";
+    },
     name: string;
     speaker_uuid: string;
     styles: [

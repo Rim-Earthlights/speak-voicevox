@@ -32,15 +32,23 @@ export class SpeakerRepository {
      */
     public async registerSpeaker(gid: string, uid: string): Promise<boolean> {
         const speaker = await this.repository.findOne({ where: { guild_id: gid, user_id: uid } });
-        if (!speaker) {
-            const newSpeaker = new Models.Speaker();
-            newSpeaker.guild_id = gid;
-            newSpeaker.user_id = uid;
-            newSpeaker.is_used = 0;
-            await this.repository.save(newSpeaker);
-            return true;
+        try {
+            if (!speaker) {
+                const newSpeaker = new Models.Speaker();
+                newSpeaker.guild_id = gid;
+                newSpeaker.user_id = uid;
+                newSpeaker.is_used = 0;
+                await this.repository.save(newSpeaker);
+                return true;
+            } else {
+                speaker.is_used = 0;
+                await this.repository.save(speaker);
+                return true;
+            }
         }
-        return false;
+        catch (err) {
+            return false;
+        }
     }
 
     /**

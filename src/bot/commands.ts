@@ -31,7 +31,7 @@ export async function commandSelector(message: Message) {
                     .setTitle(`エラー`)
                     .setDescription(`呼び出せるbotが見つからなかった`);
 
-                message.reply({ embeds: [send] });
+                await message.reply({ embeds: [send] });
                 return;
             }
             if (speaker.user_id !== DISCORD_CLIENT.user.id) {
@@ -46,7 +46,7 @@ export async function commandSelector(message: Message) {
                     .setTitle(`エラー`)
                     .setDescription(`userのボイスチャンネルが見つからなかった`);
 
-                message.reply({ content: `ボイスチャンネルに入ってから使って～！`, embeds: [send] });
+                await message.reply({ content: `ボイスチャンネルに入ってから使って～！`, embeds: [send] });
                 return;
             }
 
@@ -74,6 +74,18 @@ export async function commandSelector(message: Message) {
                 return;
             }
 
+            if (!voiceType && !speedSlace) {
+                const voiceName = await findVoiceFromId(user.voice_id);
+
+                const send = new EmbedBuilder()
+                    .setColor('#00ffff')
+                    .setTitle(`現在の設定`)
+                    .setDescription(`ボイスタイプ: ${voiceName}\nスピード: ${user.voice_speed}`);
+                await message.reply({ embeds: [send] });
+                return;
+            }
+
+
             const saveuser = {
                 ...user,
                 voice_id: Number.isNaN(voiceType) ? 0 : voiceType,
@@ -88,7 +100,7 @@ export async function commandSelector(message: Message) {
                 .setColor('#00ff00')
                 .setTitle(`設定完了`)
                 .setDescription(`ボイスタイプ: ${voiceName}\nスピード: ${saveuser.voice_speed}`);
-            message.reply({ embeds: [send] });
+            await message.reply({ embeds: [send] });
 
             break;
         }
