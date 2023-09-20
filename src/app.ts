@@ -11,7 +11,7 @@ import { DISCORD_CLIENT } from './constant/constants.js';
 import { CONFIG, CommandConfig } from './config/config.js';
 import * as logger from './common/logger.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
-import { addQueue, Speaker } from './bot/function/speak.js';
+import { addQueue, speak, Speaker } from './bot/function/speak.js';
 import { initJob } from './job/job.js';
 import { joinVoiceChannel, leftVoiceChannel } from './bot/function/room.js';
 import { fs } from 'mz';
@@ -80,6 +80,9 @@ DISCORD_CLIENT.once('ready', async () => {
             await repository.registerSpeaker(guild.id, DISCORD_CLIENT.user!.id);
         })
     });
+    setInterval(() => {
+        speak();
+    }, 100);
 });
 
 /**

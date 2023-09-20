@@ -63,7 +63,7 @@ async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise
             }),
             player: createAudioPlayer({
                 behaviors: {
-                    noSubscriber: NoSubscriberBehavior.Pause
+                    noSubscriber: NoSubscriberBehavior.Stop
                 }
             }),
             status: AudioPlayerStatus.Idle,
@@ -94,7 +94,7 @@ async function getAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<
  * プレイヤーを削除する
  * @param gid
  */
-async function removeAudioPlayer(channel: VoiceBasedChannel): Promise<boolean> {
+export async function removeAudioPlayer(channel: VoiceBasedChannel): Promise<boolean> {
     const PlayerData = Speaker.player.find((p) => p.guild_id === channel.guild.id);
     if (PlayerData) {
         Speaker.player = Speaker.player.filter((p) => p.guild_id !== channel.guild.id);
@@ -107,11 +107,13 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
     const user = await usersRepository.get(uid);
 
     if (!user) {
-        const send = new EmbedBuilder()
-            .setColor('#ff0000')
-            .setTitle(`エラー`)
-            .setDescription(`ユーザーが見つからなかった`);
-        channel.send({ embeds: [send] });
+        if (CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
+            const send = new EmbedBuilder()
+                .setColor('#ff0000')
+                .setTitle(`エラー`)
+                .setDescription(`ユーザーが見つからなかった`);
+            channel.send({ embeds: [send] });
+        }
         return;
     }
     const isInitializedUri = `http://127.0.0.1:50021/is_initialized_speaker`;
@@ -206,10 +208,6 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
  */
 export async function speak(): Promise<void> {
     Speaker.player.map(async (speaker) => {
-        if (speaker.channel.status === AudioPlayerStatus.Playing) {
-            return;
-        }
-
         if (speaker.channel.status !== AudioPlayerStatus.Idle) {
             return;
         }
@@ -224,9 +222,9 @@ export async function speak(): Promise<void> {
         const resource = createAudioResource(Readable.from(chatData.message), { inputType: StreamType.Arbitrary });
         speaker.channel.player.play(resource);
 
-        Promise.all([entersState(speaker.channel.player, AudioPlayerStatus.Idle, 60 * 60 * 1000)]).then(function () {
-            speaker.channel.status = AudioPlayerStatus.Idle;
-        });
+        await entersState(speaker.channel.player, AudioPlayerStatus.Playing, 1000);
+        await entersState(speaker.channel.player, AudioPlayerStatus.Idle, 24 * 60 * 60 * 1000);
+        speaker.channel.status = AudioPlayerStatus.Idle;
     });
 }
 

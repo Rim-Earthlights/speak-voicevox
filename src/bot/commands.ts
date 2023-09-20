@@ -38,6 +38,8 @@ export async function commandSelector(message: Message) {
                 return;
             }
 
+            setTimeout(() => null, 200);
+
             const channel = message.member?.voice.channel;
 
             if (!channel) {
@@ -80,7 +82,7 @@ export async function commandSelector(message: Message) {
                 const send = new EmbedBuilder()
                     .setColor('#00ffff')
                     .setTitle(`現在の設定`)
-                    .setDescription(`ボイスタイプ: ${voiceName}\nスピード: ${user.voice_speed}`);
+                    .setDescription(`ボイスタイプ: ${voiceName}(${user.voice_id})\nスピード: ${user.voice_speed}`);
                 await message.reply({ embeds: [send] });
                 return;
             }

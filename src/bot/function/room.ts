@@ -1,5 +1,5 @@
 import { VoiceChannel, VoiceState } from 'discord.js';
-import { Speaker, addQueue } from './speak';
+import { Speaker, addQueue, removeAudioPlayer } from './speak';
 import { getVoiceConnection } from '@discordjs/voice';
 import * as logger from '../../common/logger';
 import { SpeakerRepository } from '../../model/repository/speakerRepository';
@@ -15,6 +15,16 @@ export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
     if (vc == null || vc.members.size === 0) {
         return;
     }
+    if (voiceState.member?.id === DISCORD_CLIENT.user?.id) {
+        logger.info(vc.guild.id, 'leftVoiceChannel', 'Bot left the voice channel');
+
+        await removeAudioPlayer(vc);
+
+        const repository = new SpeakerRepository();
+        await repository.updateUsedSpeaker(voiceState.guild.id, DISCORD_CLIENT.user!.id, false);
+        return;
+    }
+
     const bot = vc.members.filter((m) => m.user.bot);
     if (bot.size === vc.members.size) {
         const connection = getVoiceConnection(voiceState.guild.id);

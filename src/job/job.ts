@@ -9,7 +9,7 @@ export async function initJob() {
      * 1秒毎に実行されるタスク
      */
     cron.schedule('* * * * * *', async () => {
-        await speak();
+        //await speak();
     });
 
     logger.info('system', 'Cron job', 'Initialized');
