@@ -22,38 +22,7 @@ export async function commandSelector(message: Message) {
     content.shift();
     switch (command) {
         case CONFIG.COMMAND.SPEAK: {
-            const repository = new SpeakerRepository();
-            const speaker = await repository.getUnusedSpeaker(message.guild.id);
-
-            if (!speaker) {
-                const send = new EmbedBuilder()
-                    .setColor('#ff0000')
-                    .setTitle(`エラー`)
-                    .setDescription(`呼び出せるbotが見つからなかった`);
-
-                await message.reply({ embeds: [send] });
-                return;
-            }
-            if (speaker.user_id !== DISCORD_CLIENT.user.id) {
-                return;
-            }
-
-            setTimeout(() => null, 200);
-
-            const channel = message.member?.voice.channel;
-
-            if (!channel) {
-                const send = new EmbedBuilder()
-                    .setColor('#ff0000')
-                    .setTitle(`エラー`)
-                    .setDescription(`userのボイスチャンネルが見つからなかった`);
-
-                await message.reply({ content: `ボイスチャンネルに入ってから使って～！`, embeds: [send] });
-                return;
-            }
-
-            await BotFunctions.Speak.ready(channel, message.author.id);
-            break;
+            await CallSpeaker(message);
         }
         case CONFIG.COMMAND.SPEAKER_CONFIG.SPEAKER_CONFIG:
         case CONFIG.COMMAND.SPEAKER_CONFIG.SPEAKER_CONFIG_SHORT: {
@@ -115,4 +84,53 @@ export async function commandSelector(message: Message) {
             await BotFunctions.Speak.disconnect(channel);
         }
     }
+}
+
+export async function CallSpeaker(message: Message, isForce = false) {
+    if (!message.guild || !DISCORD_CLIENT.user) {
+        return;
+    }
+
+    const repository = new SpeakerRepository();
+    const self = await repository.getSpeaker(message.guild.id, DISCORD_CLIENT.user.id);
+    const speaker = await repository.getUnusedSpeaker(message.guild.id);
+
+    if (isForce) {
+        if (!self?.is_used) {
+            const channel = message.member?.voice.channel;
+            if (channel) {
+                await BotFunctions.Speak.ready(channel, message.author.id);
+            }
+            return;
+        }
+    }
+
+    if (!speaker) {
+        const send = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle(`エラー`)
+            .setDescription(`呼び出せるbotが見つからなかった`);
+
+        await message.reply({ embeds: [send] });
+        return;
+    }
+    if (speaker.user_id !== DISCORD_CLIENT.user.id) {
+        return;
+    }
+
+    setTimeout(() => null, 200);
+
+    const channel = message.member?.voice.channel;
+
+    if (!channel) {
+        const send = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle(`エラー`)
+            .setDescription(`userのボイスチャンネルが見つからなかった`);
+
+        await message.reply({ content: `ボイスチャンネルに入ってから使って～！`, embeds: [send] });
+        return;
+    }
+
+    await BotFunctions.Speak.ready(channel, message.author.id);
 }

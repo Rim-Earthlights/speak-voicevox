@@ -5,7 +5,7 @@ import {
     SlashCommandBuilder,
     VoiceBasedChannel,
 } from 'discord.js';
-import { commandSelector } from './bot/commands.js';
+import { CallSpeaker, commandSelector } from './bot/commands.js';
 import 'dayjs/locale/ja';
 import { DISCORD_CLIENT } from './constant/constants.js';
 import { CONFIG, CommandConfig } from './config/config.js';
@@ -106,6 +106,9 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
     }
     const state = Speaker.player.find((s) => s.guild_id === message.guild?.id);
     if (!state) {
+        if (message.mentions.users.find((x) => x.id === DISCORD_CLIENT.user?.id)) {
+            await CallSpeaker(message, true);
+        }
         return;
     }
     if (!state.channel.player) {
