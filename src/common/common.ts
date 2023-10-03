@@ -6,11 +6,11 @@ import { SpeakersResponse } from '../interface/audioResponse';
  * @param id
  * @returns
  */
-export const findVoiceFromId = async (id: number): Promise<string> => {
+export const findVoiceFromId = async (id: number): Promise<string | null> => {
     const speakersUri = `http://127.0.0.1:50021/speakers`;
     const speakers = (await got.get(speakersUri).json()) as SpeakersResponse[];
 
-    let voiceName: string = '不明';
+    let voiceName: string | null = null;
     speakers.map((speaker) => {
         const style = speaker.styles.find((style) => style.id === id);
         if (style) {
