@@ -81,7 +81,7 @@ export async function commandSelector(message: Message) {
             const send = new EmbedBuilder()
                 .setColor('#00ff00')
                 .setTitle(`設定完了`)
-                .setDescription(`声: ${voiceName}(${user.voice_id})\nスピード: ${saveuser.voice_speed}`);
+                .setDescription(`声: ${voiceName}(${voiceType})\nスピード: ${saveuser.voice_speed}`);
             await message.reply({ embeds: [send] });
 
             break;
