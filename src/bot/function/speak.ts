@@ -21,7 +21,6 @@ import * as logger from '../../common/logger.js';
 import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../../constant/constants';
 
-
 export const Speaker = {
     player: [] as Player[]
 };
@@ -72,7 +71,7 @@ async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise
     };
     p.channel.connection.subscribe(p.channel.player);
     Speaker.player.push(p);
-    return Speaker.player.find(p => p.guild_id === gid)!;
+    return Speaker.player.find((p) => p.guild_id === gid)!;
 }
 /**
  * プレイヤーを更新する
@@ -81,7 +80,6 @@ async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise
  * @returns
  */
 async function getAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player | null> {
-
     const PlayerData = Speaker.player.find((p) => p.guild_id === gid && p.channel.id === channel.id);
     if (PlayerData) {
         return PlayerData;
@@ -145,10 +143,11 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
         .setTitle('読み上げを開始します')
         .setDescription(`終了する際は \`.${CONFIG.COMMAND.DISCONNECT}\` で終わるよ`);
 
+    (channel as VoiceChannel).send({ embeds: [send] });
+
+    setTimeout(() => {}, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
     const repository = new SpeakerRepository();
     await repository.updateUsedSpeaker(channel.guild.id, DISCORD_CLIENT.user!.id, true);
-
-    (channel as VoiceChannel).send({ embeds: [send] });
 }
 
 export async function addQueue(channel: VoiceBasedChannel, message: string, uid: string): Promise<void> {
@@ -195,7 +194,6 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
             responseType: 'buffer'
         })
         .buffer();
-
 
     PlayerData.channel.chat.push({
         user_id: uid,

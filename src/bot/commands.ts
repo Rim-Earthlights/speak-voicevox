@@ -21,7 +21,7 @@ export async function commandSelector(message: Message) {
     const command = content[0];
     content.shift();
     switch (command) {
-        case CONFIG.COMMAND.SPEAK: {
+        case CONFIG.COMMAND.SPEAK.COMMAND_NAME: {
             await CallSpeaker(message);
             break;
         }
@@ -45,8 +45,6 @@ export async function commandSelector(message: Message) {
                 message.reply({ embeds: [send] });
                 return;
             }
-
-
 
             if (!voiceType && !speedSlace) {
                 const voiceName = await findVoiceFromId(user.voice_id);
@@ -129,8 +127,6 @@ export async function CallSpeaker(message: Message, isForce = false) {
     if (speaker.user_id !== DISCORD_CLIENT.user.id) {
         return;
     }
-
-    setTimeout(() => null, 200);
 
     const channel = message.member?.voice.channel;
 
