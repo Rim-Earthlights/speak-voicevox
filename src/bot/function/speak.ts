@@ -20,6 +20,7 @@ import { CONFIG } from '../../config/config';
 import * as logger from '../../common/logger.js';
 import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../../constant/constants';
+import { convertMessageWithoutEmoji } from '../../common/common';
 
 export const Speaker = {
     player: [] as Player[]
@@ -178,6 +179,12 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
     }
 
     if (PlayerData.channel.id !== channel.id) {
+        return;
+    }
+
+    message = convertMessageWithoutEmoji(message);
+
+    if (message.length === 0) {
         return;
     }
 

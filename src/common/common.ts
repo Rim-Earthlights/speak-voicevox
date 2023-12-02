@@ -19,3 +19,12 @@ export const findVoiceFromId = async (id: number): Promise<string | null> => {
     });
     return voiceName;
 };
+
+/**
+ * メッセージから絵文字を削除する
+ * @param message メッセージ
+ * @returns 削除後のメッセージ
+ */
+export const convertMessageWithoutEmoji = (message: string): string => {
+    return message.replace(/<:[^<>]*>/g, '');
+};
