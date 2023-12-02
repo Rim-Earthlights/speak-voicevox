@@ -24,9 +24,9 @@ export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
         await repository.updateUsedSpeaker(voiceState.guild.id, DISCORD_CLIENT.user!.id, false);
         return;
     }
-
+    const me = vc.members.find((m) => m.id === DISCORD_CLIENT.user?.id);
     const bot = vc.members.filter((m) => m.user.bot);
-    if (bot.size === vc.members.size) {
+    if (me && bot.size === vc.members.size) {
         const connection = getVoiceConnection(voiceState.guild.id);
         try {
             const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
@@ -48,16 +48,16 @@ export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
             return;
         }
 
-        // const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
-        // if (speaker) {
-        //     if (voiceState.member) {
-        //         await addQueue(
-        //             voiceState.channel as VoiceChannel,
-        //             `${voiceState.member.displayName}さんが退室しました`,
-        //             DISCORD_CLIENT.user!.id
-        //         );
-        //     }
-        // }
+        const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+        if (speaker) {
+            if (voiceState.member) {
+                await addQueue(
+                    voiceState.channel as VoiceChannel,
+                    `${voiceState.member.displayName}さんが退室しました`,
+                    DISCORD_CLIENT.user!.id
+                );
+            }
+        }
     }
 }
 
@@ -78,14 +78,14 @@ export async function joinVoiceChannel(voiceState: VoiceState): Promise<void> {
         return;
     }
 
-    // const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
-    // if (speaker) {
-    //     if (voiceState.member) {
-    //         await addQueue(
-    //             voiceState.channel as VoiceChannel,
-    //             `${voiceState.member.displayName}さんが入室しました`,
-    //             DISCORD_CLIENT.user!.id
-    //         );
-    //     }
-    // }
+    const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+    if (speaker) {
+        if (voiceState.member) {
+            await addQueue(
+                voiceState.channel as VoiceChannel,
+                `${voiceState.member.displayName}さんが入室しました`,
+                DISCORD_CLIENT.user!.id
+            );
+        }
+    }
 }

@@ -1,10 +1,4 @@
-import {
-    ChannelType,
-    Message,
-    REST,
-    SlashCommandBuilder,
-    VoiceBasedChannel,
-} from 'discord.js';
+import { ChannelType, Message, REST, SlashCommandBuilder, VoiceBasedChannel } from 'discord.js';
 import { CallSpeaker, commandSelector } from './bot/commands.js';
 import 'dayjs/locale/ja';
 import { DISCORD_CLIENT } from './constant/constants.js';
@@ -78,7 +72,7 @@ DISCORD_CLIENT.once('ready', async () => {
     DISCORD_CLIENT.guilds.fetch().then((guilds) => {
         guilds.forEach(async (guild) => {
             await repository.registerSpeaker(guild.id, DISCORD_CLIENT.user!.id);
-        })
+        });
     });
     setInterval(() => {
         speak();
@@ -99,7 +93,7 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
         await logger.info(
             message.guild ? message.guild.id : 'dm',
             'command-received',
-            `author: ${message.author.tag}, content: ${message.content}`
+            `author: ${message.author.displayName}, content: ${message.content}`
         );
         await commandSelector(message);
         return;
