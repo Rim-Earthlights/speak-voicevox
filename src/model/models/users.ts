@@ -19,6 +19,9 @@ export class Users extends BaseEntity {
     user_name: string | null = null;
 
     @Column({ type: 'varchar', width: 255, nullable: true })
+    nickname: string | null = null;
+
+    @Column({ type: 'varchar', width: 255, nullable: true })
     pref: string | null = null;
 
     @Column({ type: 'datetime', nullable: true })

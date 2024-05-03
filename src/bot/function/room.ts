@@ -4,13 +4,14 @@ import { getVoiceConnection } from '@discordjs/voice';
 import * as logger from '../../common/logger';
 import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../../constant/constants';
+import { UsersRepository } from '../../model/repository/usersRepository';
 
 /**
  * ボイスチャンネルから切断した時の処理
  * @param voiceState VoiceState
  * @returns void
  */
-export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
+export async function leftVoiceChannel(voiceState: VoiceState, newState?: VoiceState): Promise<void> {
     const vc = voiceState.channel as VoiceChannel;
     if (vc == null || vc.members.size === 0) {
         return;
@@ -51,11 +52,26 @@ export async function leftVoiceChannel(voiceState: VoiceState): Promise<void> {
         const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
         if (speaker) {
             if (voiceState.member) {
-                await addQueue(
-                    voiceState.channel as VoiceChannel,
-                    `${voiceState.member.displayName}さんが退室しました`,
-                    DISCORD_CLIENT.user!.id
-                );
+                const usersRepository = new UsersRepository();
+                const user = await usersRepository.get(voiceState.member.id);
+                let username = user?.nickname;
+                if (!username) {
+                    username = voiceState.member.displayName;
+                }
+
+                if (newState) {
+                    await addQueue(
+                        voiceState.channel as VoiceChannel,
+                        `${username}が${newState.channel?.name}に移動しました`,
+                        DISCORD_CLIENT.user!.id
+                    );
+                } else {
+                    await addQueue(
+                        voiceState.channel as VoiceChannel,
+                        `${username}が退室しました`,
+                        DISCORD_CLIENT.user!.id
+                    );
+                }
             }
         }
     }
@@ -81,9 +97,15 @@ export async function joinVoiceChannel(voiceState: VoiceState): Promise<void> {
     const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
     if (speaker) {
         if (voiceState.member) {
+            const usersRepository = new UsersRepository();
+            const user = await usersRepository.get(voiceState.member.id);
+            let username = user?.nickname;
+            if (!username) {
+                username = voiceState.member.displayName;
+            }
             await addQueue(
                 voiceState.channel as VoiceChannel,
-                `${voiceState.member.displayName}さんが入室しました`,
+                `${username}が入室しました`,
                 DISCORD_CLIENT.user!.id
             );
         }
