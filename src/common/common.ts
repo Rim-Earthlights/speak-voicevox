@@ -26,5 +26,5 @@ export const findVoiceFromId = async (id: number): Promise<string | null> => {
  * @returns 削除後のメッセージ
  */
 export const convertMessageWithoutEmoji = (message: string): string => {
-    return message.replace(/<:[^<>]*>/g, '');
+    return message.replace(/<(a|):[^<>]*>/g, '');
 };
