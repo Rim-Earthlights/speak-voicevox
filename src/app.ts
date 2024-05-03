@@ -57,6 +57,7 @@ DISCORD_CLIENT.login(CONFIG.TOKEN);
  * bot初回読み込み
  */
 DISCORD_CLIENT.once('ready', async () => {
+    console.log('==================================================');
     TypeOrm.dataSource
         .initialize()
         .then(async () => {
@@ -66,7 +67,6 @@ DISCORD_CLIENT.once('ready', async () => {
             logger.error('system', 'db-init', e);
         });
     await initJob();
-    console.log('==================================================');
     logger.info(undefined, 'ready', `discord bot logged in: ${DISCORD_CLIENT.user?.tag}`);
     const repository = new SpeakerRepository();
     DISCORD_CLIENT.guilds.fetch().then((guilds) => {
@@ -131,7 +131,7 @@ DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {
     } else if (oldState.channelId === null) {
         await joinVoiceChannel(newState);
     } else {
-        await leftVoiceChannel(oldState);
+        await leftVoiceChannel(oldState, newState);
         await joinVoiceChannel(newState);
     }
 });
