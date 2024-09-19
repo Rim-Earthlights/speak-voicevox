@@ -40,3 +40,18 @@ export interface SpeakersResponse {
     ];
     version: string;
 }
+
+export interface CoeiroSpeakersResponse {
+    speakerName: string;
+    speakerUuid: string;
+    styles: [
+        {
+            styleName: string;
+            styleId: number;
+            base64Icon: string;
+            base64Portrait: string;
+        }
+    ];
+    version: string;
+    base64Portrait: string;
+};

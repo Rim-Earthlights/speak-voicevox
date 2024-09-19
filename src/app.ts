@@ -10,6 +10,7 @@ import { initJob } from './job/job.js';
 import { joinVoiceChannel, leftVoiceChannel } from './bot/function/room.js';
 import { fs } from 'mz';
 import { SpeakerRepository } from './model/repository/speakerRepository.js';
+import { initializeCoeiroSpeakerIds } from './common/common.js';
 
 // read config file
 const json = process.argv[2];
@@ -67,6 +68,7 @@ DISCORD_CLIENT.once('ready', async () => {
             logger.error('system', 'db-init', e);
         });
     await initJob();
+    await initializeCoeiroSpeakerIds();
     logger.info(undefined, 'ready', `discord bot logged in: ${DISCORD_CLIENT.user?.tag}`);
     const repository = new SpeakerRepository();
     DISCORD_CLIENT.guilds.fetch().then((guilds) => {
