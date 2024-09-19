@@ -3,7 +3,7 @@ import * as BotFunctions from './function';
 import { UsersRepository } from '../model/repository/usersRepository';
 import got from 'got';
 import { SpeakersResponse } from '../interface/audioResponse';
-import { findVoiceFromId } from '../common/common';
+import { findVoiceFromId, initializeCoeiroSpeakerIds } from '../common/common';
 import { CONFIG } from '../config/config';
 import { SpeakerRepository } from '../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../constant/constants';
@@ -82,6 +82,13 @@ export async function commandSelector(message: Message) {
                 .setDescription(`声: ${voiceName}(${voiceType})\nスピード: ${saveuser.voice_speed}`);
             await message.reply({ embeds: [send] });
 
+            break;
+        }
+        case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_RESET: {
+            if (!CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
+                return;
+            }
+            await initializeCoeiroSpeakerIds();
             break;
         }
         case CONFIG.COMMAND.DISCONNECT: {

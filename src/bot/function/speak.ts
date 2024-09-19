@@ -21,6 +21,7 @@ import * as logger from '../../common/logger.js';
 import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../../constant/constants';
 import { convertMessageWithoutEmoji } from '../../common/common';
+import * as SpeakService from '../speaker/speakService';
 
 export const Speaker = {
     player: [] as Player[]
@@ -115,17 +116,8 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
         }
         return;
     }
-    const isInitializedUri = `http://127.0.0.1:50021/is_initialized_speaker`;
 
-    const isInitialized = (await got
-        .get(isInitializedUri, { searchParams: { speaker: user.voice_id } })
-        .json()) as boolean;
-
-    if (!isInitialized) {
-        await got
-            .post(`http://127.0.0.1:50021/initialize_speaker`, { searchParams: { speaker: user.voice_id } })
-            .json();
-    }
+    await SpeakService.initialize(user.voice_id);
 
     const p = await initAudioPlayer(channel.guild.id, channel);
 
@@ -146,7 +138,7 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
 
     (channel as VoiceChannel).send({ embeds: [send] });
 
-    setTimeout(() => {}, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
+    setTimeout(() => { }, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
     const repository = new SpeakerRepository();
     await repository.updateUsedSpeaker(channel.guild.id, DISCORD_CLIENT.user!.id, true);
 }
@@ -169,9 +161,13 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
     if (message.includes('http')) {
         message = 'URLです';
     }
-
-    if (message.length > 200) {
-        message = '長文省略';
+    let flag = false;
+    if (message.length > 50) {
+        if (message.indexOf('^') === 0) {
+            flag = true;
+        } else {
+            message = '長文省略';
+        }
     }
 
     if (!PlayerData) {
@@ -188,19 +184,7 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
         return;
     }
 
-    const audioQueryUri = `http://127.0.0.1:50021/audio_query`;
-    const synthesisUri = `http://127.0.0.1:50021/synthesis`;
-
-    const audioQuery = (await got
-        .post(audioQueryUri, { searchParams: { text: message, speaker: user.voice_id } })
-        .json()) as AudioResponse;
-    const stream = await got
-        .post(synthesisUri, {
-            searchParams: { speaker: user.voice_id },
-            json: { ...audioQuery, speedScale: user.voice_speed },
-            responseType: 'buffer'
-        })
-        .buffer();
+    const stream = await SpeakService.audioQuery(user, message, flag);
 
     PlayerData.channel.chat.push({
         user_id: uid,
