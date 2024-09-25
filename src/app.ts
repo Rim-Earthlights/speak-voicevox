@@ -1,33 +1,65 @@
-import { ChannelType, Message, REST, SlashCommandBuilder, VoiceBasedChannel } from 'discord.js';
-import { CallSpeaker, commandSelector } from './bot/commands.js';
+import { ChannelType, Message, REST, Routes, SlashCommandBuilder, VoiceBasedChannel } from 'discord.js';
+import { commandSelector } from './bot/commands.js';
 import 'dayjs/locale/ja';
 import { DISCORD_CLIENT } from './constant/constants.js';
 import { CONFIG, CommandConfig } from './config/config.js';
-import * as logger from './common/logger.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
-import { addQueue, speak, Speaker } from './bot/function/speak.js';
+import * as BotFunctions from './bot/function';
+import * as DotBotFunctions from './bot/dot_function';
+import * as SpeakService from './bot/speaker/speakService';
 import { initJob } from './job/job.js';
-import { joinVoiceChannel, leftVoiceChannel } from './bot/function/room.js';
+import { joinVoiceChannel, leftVoiceChannel } from './bot/dot_function/room.js';
 import { fs } from 'mz';
 import { SpeakerRepository } from './model/repository/speakerRepository.js';
 import { initializeCoeiroSpeakerIds } from './common/common.js';
+import { SLASH_COMMANDS } from './constant/slashCommands.js';
+import { GuildRepository } from './model/repository/guildRepository.js';
+import { Logger } from './common/logger.js';
+import { LogLevel } from './type/types.js';
 
 // read config file
 const json = process.argv[2];
 if (!json) {
-    logger.error('system', 'app', 'config file not found');
+    console.error('config file not found');
     process.exit(1);
 }
 
 const data = JSON.parse(fs.readFileSync(json, 'utf8')) as CommandConfig;
 
 if (!data.COMMAND.SPEAK) {
-    logger.error('system', 'app', 'config file not found');
+    console.error('config file not found');
     process.exit(1);
 }
 
 CONFIG.TOKEN = data.TOKEN;
+CONFIG.APP_ID = data.APP_ID;
 CONFIG.COMMAND = data.COMMAND;
+
+console.log('==================================================');
+
+TypeOrm.dataSource
+    .initialize()
+    .then(async () => {
+        await Logger.put({
+            guild_id: undefined,
+            channel_id: undefined,
+            user_id: undefined,
+            level: LogLevel.SYSTEM,
+            event: 'db-init',
+            message: ['success']
+        })
+    })
+    .catch(async (e) => {
+        await Logger.put({
+            guild_id: undefined,
+            channel_id: undefined,
+            user_id: undefined,
+            level: LogLevel.SYSTEM,
+            event: 'db-init',
+            message: [e.message]
+        });
+        return;
+    });
 
 /**
  * =======================
@@ -35,41 +67,39 @@ CONFIG.COMMAND = data.COMMAND;
  * =======================
  */
 
-const commands = [
-    new SlashCommandBuilder().setName('ping').setDescription('replies with pong'),
-    new SlashCommandBuilder()
-        .setName('debug')
-        .setDescription('debug command. usually not use.')
-        .addStringOption((option) => option.setName('url').setDescription('youtube url'))
-    // new SlashCommandBuilder().setName('tenki').setDescription('天気予報を表示します'),
-    // new SlashCommandBuilder().setName('luck').setDescription('今日の運勢を表示します'),
-    // new SlashCommandBuilder().setName('info').setDescription('ユーザ情報を表示します'),
-    // new SlashCommandBuilder()
-    //     .setName('pl')
-    //     .setDescription('音楽を再生します')
-    //     .addStringOption((option) => option.setName('url').setDescription('youtube url').setRequired(true))
-].map((command) => command.toJSON());
+const commands = SLASH_COMMANDS.map((command) => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(CONFIG.TOKEN);
-
 DISCORD_CLIENT.login(CONFIG.TOKEN);
 
 /**
  * bot初回読み込み
  */
 DISCORD_CLIENT.once('ready', async () => {
-    console.log('==================================================');
-    TypeOrm.dataSource
-        .initialize()
-        .then(async () => {
-            logger.info('system', 'db-init', 'success');
-        })
-        .catch((e) => {
-            logger.error('system', 'db-init', e);
-        });
     await initJob();
     await initializeCoeiroSpeakerIds();
-    logger.info(undefined, 'ready', `discord bot logged in: ${DISCORD_CLIENT.user?.tag}`);
+
+    // スラッシュコマンドの登録
+    rest.put(Routes.applicationCommands(CONFIG.APP_ID), { body: commands }).then(async () => {
+        await Logger.put({
+            guild_id: undefined,
+            channel_id: undefined,
+            user_id: undefined,
+            level: LogLevel.SYSTEM,
+            event: 'reg-command|add',
+            message: ['successfully add command to DM.']
+        });
+    });
+
+    await Logger.put({
+        guild_id: undefined,
+        channel_id: undefined,
+        user_id: undefined,
+        level: LogLevel.SYSTEM,
+        event: 'ready',
+        message: [`discord bot logged in: ${DISCORD_CLIENT.user?.displayName}`]
+    });
+
     const repository = new SpeakerRepository();
     DISCORD_CLIENT.guilds.fetch().then((guilds) => {
         guilds.forEach(async (guild) => {
@@ -77,7 +107,7 @@ DISCORD_CLIENT.once('ready', async () => {
         });
     });
     setInterval(() => {
-        speak();
+        SpeakService.speak();
     }, 100);
 });
 
@@ -92,18 +122,27 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
 
     // command
     if (message.content.startsWith('.')) {
-        await logger.info(
-            message.guild ? message.guild.id : 'dm',
-            'command-received',
-            `author: ${message.author.displayName}, content: ${message.content}`
-        );
+        await Logger.put({
+            guild_id: message.guild?.id,
+            channel_id: message.channel.id,
+            user_id: message.author.id,
+            level: LogLevel.SYSTEM,
+            event: 'command-received',
+            message: [
+                `gid: ${message.guild?.id}, gname: ${message.guild?.name}`,
+                `cid: ${message.channel.id}, cname: ${message.channel.type !== ChannelType.DM ? message.channel.name : 'DM'
+                }`,
+                `author : ${message.author.displayName}`,
+                `content: ${message.content}`,
+            ]
+        });
         await commandSelector(message);
         return;
     }
-    const state = Speaker.player.find((s) => s.guild_id === message.guild?.id);
+    const state = SpeakService.Speaker.player.find((s) => s.guild_id === message.guild?.id);
     if (!state) {
         if (message.mentions.users.find((x) => x.id === DISCORD_CLIENT.user?.id)) {
-            await CallSpeaker(message, true);
+            await DotBotFunctions.Speak.CallSpeaker(message, true);
         }
         return;
     }
@@ -113,12 +152,15 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
 
     if (message.channel.type === ChannelType.GuildVoice) {
         if (message.mentions.users.size === 0 && message.mentions.roles.size === 0) {
-            await logger.info(
-                message.guild ? message.guild.id : 'dm',
-                'message-received',
-                `author: ${message.author.tag}, content: ${message.content}`
-            );
-            await addQueue(message.channel as VoiceBasedChannel, message.content, message.author.id);
+            await Logger.put({
+                guild_id: message.guild?.id,
+                channel_id: message.channel.id,
+                user_id: message.author.id,
+                level: LogLevel.SYSTEM,
+                event: 'message-received',
+                message: [`author: ${message.author.tag}, content: ${message.content}`]
+            });
+            await SpeakService.addQueue(message.channel as VoiceBasedChannel, message.content, message.author.id);
         }
     }
 });

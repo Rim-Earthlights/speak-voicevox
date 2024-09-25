@@ -1,8 +1,8 @@
 import * as cron from 'node-cron';
-import * as logger from '../common/logger.js';
 import { UsersRepository } from '../model/repository/usersRepository.js';
 import dayjs from 'dayjs';
-import { speak } from '../bot/function/speak.js';
+import { Logger } from '../common/logger.js';
+import { LogLevel } from '../type/types.js';
 
 export async function initJob() {
     /**
@@ -12,5 +12,12 @@ export async function initJob() {
         //await speak();
     });
 
-    logger.info('system', 'Cron job', 'Initialized');
+    Logger.put({
+        guild_id: undefined,
+        channel_id: undefined,
+        user_id: undefined,
+        level: LogLevel.SYSTEM,
+        event: 'Cron job',
+        message: ['Initialized']
+    });
 }

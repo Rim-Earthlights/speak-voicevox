@@ -1,12 +1,9 @@
-import { ChannelType, EmbedBuilder, Message } from 'discord.js';
+import { CacheType, ChatInputCommandInteraction, EmbedBuilder, Message } from 'discord.js';
+import * as DotBotFunctions from './dot_function';
 import * as BotFunctions from './function';
 import { UsersRepository } from '../model/repository/usersRepository';
-import got from 'got';
-import { SpeakersResponse } from '../interface/audioResponse';
 import { findVoiceFromId, initializeCoeiroSpeakerIds } from '../common/common';
 import { CONFIG } from '../config/config';
-import { SpeakerRepository } from '../model/repository/speakerRepository';
-import { DISCORD_CLIENT } from '../constant/constants';
 
 /**
  * 渡されたコマンドから処理を実行する
@@ -14,7 +11,7 @@ import { DISCORD_CLIENT } from '../constant/constants';
  * @param command 渡されたメッセージ
  */
 export async function commandSelector(message: Message) {
-    if (!message.guild || !DISCORD_CLIENT.user) {
+    if (!message.guild) {
         return;
     }
     const content = message.content.replace('.', '').trimEnd().split(' ');
@@ -22,7 +19,7 @@ export async function commandSelector(message: Message) {
     content.shift();
     switch (command) {
         case CONFIG.COMMAND.SPEAK.COMMAND_NAME: {
-            await CallSpeaker(message);
+            await DotBotFunctions.Speak.CallSpeaker(message);
             break;
         }
         case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME:
@@ -85,9 +82,6 @@ export async function commandSelector(message: Message) {
             break;
         }
         case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_RESET: {
-            if (!CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
-                return;
-            }
             await initializeCoeiroSpeakerIds();
             break;
         }
@@ -97,55 +91,20 @@ export async function commandSelector(message: Message) {
                 return;
             }
 
-            await BotFunctions.Speak.disconnect(channel);
+            await DotBotFunctions.Speak.disconnect(channel);
             break;
         }
     }
 }
 
-export async function CallSpeaker(message: Message, isForce = false) {
-    if (!message.guild || !DISCORD_CLIENT.user) {
-        return;
-    }
+export async function interactionSelector(interaction: ChatInputCommandInteraction<CacheType>) {
+    const { commandName } = interaction;
 
-    const repository = new SpeakerRepository();
-    const self = await repository.getSpeaker(message.guild.id, DISCORD_CLIENT.user.id);
-    const speaker = await repository.getUnusedSpeaker(message.guild.id);
-
-    if (isForce) {
-        if (!self?.is_used) {
-            const channel = message.member?.voice.channel;
-            if (channel) {
-                await BotFunctions.Speak.ready(channel, message.author.id);
-            }
-            return;
+    switch (commandName) {
+        case CONFIG.COMMAND.SPEAK.COMMAND_NAME: {
+            await BotFunctions.Speak.CallSpeaker(interaction);
+            break;
         }
     }
-
-    if (!speaker) {
-        const send = new EmbedBuilder()
-            .setColor('#ff0000')
-            .setTitle(`エラー`)
-            .setDescription(`呼び出せるbotが見つからなかった`);
-
-        await message.reply({ embeds: [send] });
-        return;
-    }
-    if (speaker.user_id !== DISCORD_CLIENT.user.id) {
-        return;
-    }
-
-    const channel = message.member?.voice.channel;
-
-    if (!channel) {
-        const send = new EmbedBuilder()
-            .setColor('#ff0000')
-            .setTitle(`エラー`)
-            .setDescription(`userのボイスチャンネルが見つからなかった`);
-
-        await message.reply({ content: `ボイスチャンネルに入ってから使って～！`, embeds: [send] });
-        return;
-    }
-
-    await BotFunctions.Speak.ready(channel, message.author.id);
 }
+

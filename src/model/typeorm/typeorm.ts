@@ -23,7 +23,8 @@ export class TypeOrm {
             Models.Item,
             Models.Guild,
             Models.ItemRank,
-            Models.Speaker
+            Models.Speaker,
+            Models.Log
         ] // 利用するエンティティ。パスでの指定も可能
     });
 }

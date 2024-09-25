@@ -1,10 +1,11 @@
 import { VoiceChannel, VoiceState } from 'discord.js';
-import { Speaker, addQueue, removeAudioPlayer } from './speak';
 import { getVoiceConnection } from '@discordjs/voice';
-import * as logger from '../../common/logger';
 import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../../constant/constants';
 import { UsersRepository } from '../../model/repository/usersRepository';
+import * as SpeakService from '../speaker/speakService';
+import { Logger } from '../../common/logger';
+import { LogLevel } from '../../type/types';
 
 /**
  * ボイスチャンネルから切断した時の処理
@@ -17,9 +18,16 @@ export async function leftVoiceChannel(voiceState: VoiceState, newState?: VoiceS
         return;
     }
     if (voiceState.member?.id === DISCORD_CLIENT.user?.id) {
-        logger.info(vc.guild.id, 'leftVoiceChannel', 'Bot left the voice channel');
+        Logger.put({
+            guild_id: vc.guild.id,
+            channel_id: vc.id,
+            user_id: undefined,
+            level: LogLevel.INFO,
+            event: 'leftVoiceChannel',
+            message: [`Bot left the voice channel`]
+        });
 
-        await removeAudioPlayer(vc);
+        await SpeakService.removeAudioPlayer(vc);
 
         const repository = new SpeakerRepository();
         await repository.updateUsedSpeaker(voiceState.guild.id, DISCORD_CLIENT.user!.id, false);
@@ -30,9 +38,9 @@ export async function leftVoiceChannel(voiceState: VoiceState, newState?: VoiceS
     if (me && bot.size === vc.members.size) {
         const connection = getVoiceConnection(voiceState.guild.id);
         try {
-            const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+            const speaker = SpeakService.Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
             if (speaker) {
-                Speaker.player = Speaker.player.filter((p) => p.guild_id !== voiceState.guild.id);
+                SpeakService.Speaker.player = SpeakService.Speaker.player.filter((p) => p.guild_id !== voiceState.guild.id);
             }
             if (connection) {
                 connection.destroy();
@@ -41,7 +49,14 @@ export async function leftVoiceChannel(voiceState: VoiceState, newState?: VoiceS
             await repository.updateUsedSpeaker(voiceState.guild.id, DISCORD_CLIENT.user!.id, false);
         } catch (e) {
             const error = e as Error;
-            logger.error(voiceState.guild.id, 'voiceStateUpdate', error.message);
+            Logger.put({
+                guild_id: voiceState.guild.id,
+                channel_id: vc.id,
+                user_id: undefined,
+                level: LogLevel.ERROR,
+                event: 'leftVoiceChannel',
+                message: [`Error: ${error.message}`]
+            });
         }
     } else {
         const connection = getVoiceConnection(voiceState.guild.id);
@@ -49,7 +64,7 @@ export async function leftVoiceChannel(voiceState: VoiceState, newState?: VoiceS
             return;
         }
 
-        const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+        const speaker = SpeakService.Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
         if (speaker) {
             if (voiceState.member) {
                 const usersRepository = new UsersRepository();
@@ -60,13 +75,13 @@ export async function leftVoiceChannel(voiceState: VoiceState, newState?: VoiceS
                 }
 
                 if (newState) {
-                    await addQueue(
+                    await SpeakService.addQueue(
                         voiceState.channel as VoiceChannel,
                         `${username}が${newState.channel?.name}に移動しました`,
                         DISCORD_CLIENT.user!.id
                     );
                 } else {
-                    await addQueue(
+                    await SpeakService.addQueue(
                         voiceState.channel as VoiceChannel,
                         `${username}が退室しました`,
                         DISCORD_CLIENT.user!.id
@@ -94,7 +109,7 @@ export async function joinVoiceChannel(voiceState: VoiceState): Promise<void> {
         return;
     }
 
-    const speaker = Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
+    const speaker = SpeakService.Speaker.player.find((p) => p.guild_id === voiceState.guild.id);
     if (speaker) {
         if (voiceState.member) {
             const usersRepository = new UsersRepository();
@@ -103,7 +118,7 @@ export async function joinVoiceChannel(voiceState: VoiceState): Promise<void> {
             if (!username) {
                 username = voiceState.member.displayName;
             }
-            await addQueue(
+            await SpeakService.addQueue(
                 voiceState.channel as VoiceChannel,
                 `${username}が入室しました`,
                 DISCORD_CLIENT.user!.id

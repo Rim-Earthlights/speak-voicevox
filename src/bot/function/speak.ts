@@ -1,242 +1,129 @@
-import {
-    AudioPlayer,
-    AudioPlayerStatus,
-    createAudioPlayer,
-    createAudioResource,
-    DiscordGatewayAdapterCreator,
-    entersState,
-    getVoiceConnection,
-    joinVoiceChannel,
-    NoSubscriberBehavior,
-    StreamType,
-    VoiceConnection
-} from '@discordjs/voice';
-import { EmbedBuilder, VoiceBasedChannel, VoiceChannel } from 'discord.js';
-import got from 'got';
-import { Readable } from 'stream';
-import { AudioResponse } from '../../interface/audioResponse';
-import { UsersRepository } from '../../model/repository/usersRepository';
-import { CONFIG } from '../../config/config';
-import * as logger from '../../common/logger.js';
-import { SpeakerRepository } from '../../model/repository/speakerRepository';
-import { DISCORD_CLIENT } from '../../constant/constants';
-import { convertMessageWithoutEmoji } from '../../common/common';
+import { CacheType, ChatInputCommandInteraction, EmbedBuilder, GuildMember, VoiceBasedChannel } from "discord.js";
+import { SpeakerRepository } from "../../model/repository/speakerRepository";
+import { DISCORD_CLIENT } from "../../constant/constants";
+import { UsersRepository } from "../../model/repository/usersRepository";
+import { CONFIG } from "../../config/config";
 import * as SpeakService from '../speaker/speakService';
+import { getVoiceConnection } from "@discordjs/voice";
 
-export const Speaker = {
-    player: [] as Player[]
-};
+export async function CallSpeaker(interaction: ChatInputCommandInteraction<CacheType>, isForce = false) {
+  if (!interaction.guild || !DISCORD_CLIENT.user) {
+    return;
+  }
 
-interface Player {
-    guild_id: string;
-    channel: ChannelPlayer;
-}
+  const repository = new SpeakerRepository();
+  const self = await repository.getSpeaker(interaction.guild.id, DISCORD_CLIENT.user.id);
+  const speaker = await repository.getUnusedSpeaker(interaction.guild.id);
 
-interface ChannelPlayer {
-    id: string;
-    connection: VoiceConnection;
-    player: AudioPlayer;
-    status: AudioPlayerStatus;
-    chat: ChatData[];
-}
-
-interface ChatData {
-    user_id: string;
-    message: Buffer;
-}
-
-async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player | null> {
-    if (Speaker.player.find((p) => p.guild_id === gid)) {
-        logger.info(gid, 'initAudioPlayer', JSON.stringify(Speaker.player.find((p) => p.guild_id === gid)));
-        return null;
+  if (isForce) {
+    if (!self?.is_used) {
+      const channel = (interaction.member as GuildMember).voice.channel;
+      if (channel) {
+        await ready(interaction, interaction.user.id);
+      }
+      return;
     }
+  }
 
-    const p = {
-        guild_id: gid,
-        channel: {
-            id: channel.id,
-            connection: joinVoiceChannel({
-                adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
-                channelId: channel.id,
-                guildId: channel.guild.id,
-                selfDeaf: true,
-                selfMute: false
-            }),
-            player: createAudioPlayer({
-                behaviors: {
-                    noSubscriber: NoSubscriberBehavior.Stop
-                }
-            }),
-            status: AudioPlayerStatus.Idle,
-            chat: []
-        }
-    };
-    p.channel.connection.subscribe(p.channel.player);
-    Speaker.player.push(p);
-    return Speaker.player.find((p) => p.guild_id === gid)!;
-}
-/**
- * プレイヤーを更新する
- * @param gid
- * @param cid
- * @returns
- */
-async function getAudioPlayer(gid: string, channel: VoiceBasedChannel): Promise<Player | null> {
-    const PlayerData = Speaker.player.find((p) => p.guild_id === gid && p.channel.id === channel.id);
-    if (PlayerData) {
-        return PlayerData;
-    }
-
-    return null;
-}
-
-/**
- * プレイヤーを削除する
- * @param gid
- */
-export async function removeAudioPlayer(channel: VoiceBasedChannel): Promise<boolean> {
-    const PlayerData = Speaker.player.find((p) => p.guild_id === channel.guild.id);
-    if (PlayerData) {
-        Speaker.player = Speaker.player.filter((p) => p.guild_id !== channel.guild.id);
-    }
-    return true;
-}
-
-export async function ready(channel: VoiceBasedChannel, uid: string): Promise<void> {
-    const usersRepository = new UsersRepository();
-    const user = await usersRepository.get(uid);
-
-    if (!user) {
-        if (CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
-            const send = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setTitle(`エラー`)
-                .setDescription(`ユーザーが見つからなかった`);
-            channel.send({ embeds: [send] });
-        }
-        return;
-    }
-
-    await SpeakService.initialize(user.voice_id);
-
-    const p = await initAudioPlayer(channel.guild.id, channel);
-
-    if (!p) {
-        const send = new EmbedBuilder()
-            .setColor('#ff0000')
-            .setTitle(`エラー`)
-            .setDescription(`他の場所で読み上げちゃんが起動中だよ`);
-        channel.send({ embeds: [send] });
-        return;
-    }
-
+  if (!speaker) {
     const send = new EmbedBuilder()
-        .setColor('#00cc88')
-        .setAuthor({ name: `読み上げちゃん` })
-        .setTitle('読み上げを開始します')
-        .setDescription(`終了する際は \`.${CONFIG.COMMAND.DISCONNECT}\` で終わるよ`);
+      .setColor('#ff0000')
+      .setTitle(`エラー`)
+      .setDescription(`呼び出せるbotが見つからなかった`);
 
-    (channel as VoiceChannel).send({ embeds: [send] });
+    await interaction.reply({ embeds: [send] });
+    return;
+  }
+  if (speaker.user_id !== DISCORD_CLIENT.user.id) {
+    return;
+  }
 
-    setTimeout(() => { }, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
-    const repository = new SpeakerRepository();
-    await repository.updateUsedSpeaker(channel.guild.id, DISCORD_CLIENT.user!.id, true);
+  const channel = (interaction.member as GuildMember).voice.channel;
+
+  if (!channel) {
+    const send = new EmbedBuilder()
+      .setColor('#ff0000')
+      .setTitle(`エラー`)
+      .setDescription(`userのボイスチャンネルが見つからなかった`);
+
+    await interaction.reply({ content: `ボイスチャンネルに入ってから使って～！`, embeds: [send] });
+    return;
+  }
+
+  await ready(interaction, interaction.user.id);
 }
 
-export async function addQueue(channel: VoiceBasedChannel, message: string, uid: string): Promise<void> {
-    const PlayerData = await getAudioPlayer(channel.guild.id, channel);
+export async function ready(interaction: ChatInputCommandInteraction<CacheType>, uid: string): Promise<void> {
+  const usersRepository = new UsersRepository();
+  const user = await usersRepository.get(uid);
 
-    const usersRepository = new UsersRepository();
-    const user = await usersRepository.get(uid);
-
-    if (!user) {
-        const send = new EmbedBuilder()
-            .setColor('#ff0000')
-            .setTitle(`エラー`)
-            .setDescription(`ユーザーが見つからなかった`);
-        channel.send({ embeds: [send] });
-        return;
+  if (!user) {
+    if (CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
+      const send = new EmbedBuilder()
+        .setColor('#ff0000')
+        .setTitle(`エラー`)
+        .setDescription(`ユーザーが見つからなかった`);
+      interaction.reply({ embeds: [send] });
     }
+    return;
+  }
 
-    if (message.includes('http')) {
-        message = 'URLです';
-    }
-    let flag = false;
-    if (message.length > 50) {
-        if (message.indexOf('^') === 0) {
-            flag = true;
-        } else {
-            message = '長文省略';
-        }
-    }
+  await SpeakService.initialize(user.voice_id);
 
-    if (!PlayerData) {
-        return;
-    }
+  const p = await SpeakService.initAudioPlayer(interaction.guild!.id, interaction.channel as VoiceBasedChannel);
 
-    if (PlayerData.channel.id !== channel.id) {
-        return;
-    }
+  if (!p) {
+    const send = new EmbedBuilder()
+      .setColor('#ff0000')
+      .setTitle(`エラー`)
+      .setDescription(`他の場所で読み上げちゃんが起動中だよ`);
+    interaction.reply({ embeds: [send] });
+    return;
+  }
 
-    message = convertMessageWithoutEmoji(message);
+  const send = new EmbedBuilder()
+    .setColor('#00cc88')
+    .setAuthor({ name: `読み上げちゃん` })
+    .setTitle('読み上げを開始します')
+    .setDescription(`終了する際は \`.${CONFIG.COMMAND.DISCONNECT}\` で終わるよ`);
 
-    if (message.length === 0) {
-        return;
-    }
+  interaction.reply({ embeds: [send] });
 
-    const stream = await SpeakService.audioQuery(user, message, flag);
-
-    PlayerData.channel.chat.push({
-        user_id: uid,
-        message: stream
-    });
+  setTimeout(() => { }, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
+  const repository = new SpeakerRepository();
+  await repository.updateUsedSpeaker(interaction.guild!.id, DISCORD_CLIENT.user!.id, true);
 }
 
 /**
- * 読み上げる
+ * 読み上げを終了する
+ * @param channel ボイスチャンネル
+ * @returns void
  */
-export async function speak(): Promise<void> {
-    Speaker.player.map(async (speaker) => {
-        if (speaker.channel.status !== AudioPlayerStatus.Idle) {
-            return;
-        }
+export async function disconnect(interaction: ChatInputCommandInteraction<CacheType>): Promise<void> {
+  if (!interaction.guild || !DISCORD_CLIENT.user) {
+    interaction.reply({ content: `ボイスチャンネルに入ってから使って～！` });
+    return;
+  }
 
-        const chatData = speaker.channel.chat.shift();
-        if (!chatData) {
-            return;
-        }
+  const playerData = await SpeakService.getAudioPlayer(interaction.guild!.id, interaction.channel as VoiceBasedChannel);
+  if (!playerData) {
+    return;
+  }
 
-        speaker.channel.status = AudioPlayerStatus.Playing;
+  const repository = new SpeakerRepository();
+  await repository.updateUsedSpeaker(interaction.guild!.id, DISCORD_CLIENT.user!.id, false);
 
-        const resource = createAudioResource(Readable.from(chatData.message), { inputType: StreamType.Arbitrary });
-        speaker.channel.player.play(resource);
+  await SpeakService.removeAudioPlayer(interaction.channel as VoiceBasedChannel);
 
-        await entersState(speaker.channel.player, AudioPlayerStatus.Playing, 1000);
-        await entersState(speaker.channel.player, AudioPlayerStatus.Idle, 24 * 60 * 60 * 1000);
-        speaker.channel.status = AudioPlayerStatus.Idle;
-    });
-}
+  const connection = getVoiceConnection(interaction.guild!.id);
+  if (connection) {
+    connection.destroy();
+  }
+  const send = new EmbedBuilder()
+    .setColor('#00cc88')
+    .setAuthor({ name: `読み上げちゃん` })
+    .setTitle('読み上げ終了')
+    .setDescription('またね！');
 
-export async function disconnect(channel: VoiceBasedChannel): Promise<void> {
-    const playerData = await getAudioPlayer(channel.guild.id, channel);
-    if (!playerData) {
-        return;
-    }
-
-    const repository = new SpeakerRepository();
-    await repository.updateUsedSpeaker(channel.guild.id, DISCORD_CLIENT.user!.id, false);
-
-    await removeAudioPlayer(channel);
-
-    const connection = getVoiceConnection(channel.guild.id);
-    if (connection) {
-        connection.destroy();
-    }
-    const send = new EmbedBuilder()
-        .setColor('#00cc88')
-        .setAuthor({ name: `読み上げちゃん` })
-        .setTitle('読み上げ終了')
-        .setDescription('またね！');
-
-    await (channel as VoiceChannel).send({ embeds: [send] });
+  await interaction.reply({ embeds: [send] });
 }

@@ -7,3 +7,4 @@ export { Guild } from './guild.js';
 export { Item } from './item.js';
 export { ItemRank } from './itemRank.js';
 export { Speaker } from './speaker.js';
+export { Log } from './log.js';
