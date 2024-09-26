@@ -3,7 +3,7 @@ import { getVoiceConnection } from '@discordjs/voice';
 import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../../constant/constants';
 import { UsersRepository } from '../../model/repository/usersRepository';
-import * as SpeakService from '../speaker/speakService';
+import * as SpeakService from '../service/speakService';
 import { Logger } from '../../common/logger';
 import { LogLevel } from '../../type/types';
 

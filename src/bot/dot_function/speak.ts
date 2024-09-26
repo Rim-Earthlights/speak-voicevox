@@ -21,7 +21,7 @@ import * as logger from '../../common/logger.js';
 import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../../constant/constants';
 import { convertMessageWithoutEmoji } from '../../common/common';
-import * as SpeakService from '../speaker/speakService';
+import * as SpeakService from '../service/speakService';
 
 /**
  * 読み上げを呼び出す

@@ -4,6 +4,7 @@ import * as BotFunctions from './function';
 import { UsersRepository } from '../model/repository/usersRepository';
 import { findVoiceFromId, initializeCoeiroSpeakerIds } from '../common/common';
 import { CONFIG } from '../config/config';
+import { GPTMode } from '../type/types';
 
 /**
  * 渡されたコマンドから処理を実行する
@@ -18,6 +19,10 @@ export async function commandSelector(message: Message) {
     const command = content[0];
     content.shift();
     switch (command) {
+        case CONFIG.COMMAND.SPEAK.SLASH_COMMAND_NAME: {
+            await DotBotFunctions.Chat.talk(message, content.join(' '), CONFIG.OPENAI.DEFAULT_MODEL, GPTMode.DEFAULT);
+            break;
+        }
         case CONFIG.COMMAND.SPEAK.COMMAND_NAME: {
             await DotBotFunctions.Speak.CallSpeaker(message);
             break;

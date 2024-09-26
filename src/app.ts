@@ -6,7 +6,7 @@ import { CONFIG, CommandConfig } from './config/config.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
 import * as BotFunctions from './bot/function';
 import * as DotBotFunctions from './bot/dot_function';
-import * as SpeakService from './bot/speaker/speakService';
+import * as SpeakService from './bot/service/speakService.js';
 import { initJob } from './job/job.js';
 import { joinVoiceChannel, leftVoiceChannel } from './bot/dot_function/room.js';
 import { fs } from 'mz';
@@ -15,7 +15,7 @@ import { initializeCoeiroSpeakerIds } from './common/common.js';
 import { SLASH_COMMANDS } from './constant/slashCommands.js';
 import { GuildRepository } from './model/repository/guildRepository.js';
 import { Logger } from './common/logger.js';
-import { LogLevel } from './type/types.js';
+import { GPTMode, LogLevel } from './type/types.js';
 
 // read config file
 const json = process.argv[2];
@@ -139,6 +139,17 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
         await commandSelector(message);
         return;
     }
+
+    if (message.content.startsWith(`<@${DISCORD_CLIENT.user?.id}>`) && message.content.trimEnd() !== `<@${DISCORD_CLIENT.user?.id}>`) {
+        await DotBotFunctions.Chat.talk(message, message.content, CONFIG.OPENAI.DEFAULT_MODEL, GPTMode.DEFAULT);
+        return;
+    }
+
+    if (message.channel.type === ChannelType.DM) {
+        await DotBotFunctions.Chat.talk(message, message.content, CONFIG.OPENAI.DEFAULT_MODEL, GPTMode.DEFAULT);
+        return;
+    }
+
     const state = SpeakService.Speaker.player.find((s) => s.guild_id === message.guild?.id);
     if (!state) {
         if (message.mentions.users.find((x) => x.id === DISCORD_CLIENT.user?.id)) {

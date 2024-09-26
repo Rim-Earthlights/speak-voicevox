@@ -3,7 +3,7 @@ import { SpeakerRepository } from "../../model/repository/speakerRepository";
 import { DISCORD_CLIENT } from "../../constant/constants";
 import { UsersRepository } from "../../model/repository/usersRepository";
 import { CONFIG } from "../../config/config";
-import * as SpeakService from '../speaker/speakService';
+import * as SpeakService from '../service/speakService';
 import { getVoiceConnection } from "@discordjs/voice";
 
 export async function CallSpeaker(interaction: ChatInputCommandInteraction<CacheType>, isForce = false) {
