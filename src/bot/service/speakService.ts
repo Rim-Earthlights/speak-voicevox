@@ -1,18 +1,30 @@
-import got from "got";
-import { AudioResponse } from "../../interface/audioResponse";
-import * as Models from "../../model/models";
-import { convertMessageWithoutEmoji, convertVoiceId, SPEAKER_IDS } from "../../common/common";
-import { AudioPlayer, AudioPlayerStatus, createAudioPlayer, createAudioResource, DiscordGatewayAdapterCreator, entersState, getVoiceConnection, joinVoiceChannel, NoSubscriberBehavior, StreamType, VoiceConnection } from "@discordjs/voice";
-import { EmbedBuilder, VoiceBasedChannel, VoiceChannel } from "discord.js";
-import { UsersRepository } from "../../model/repository/usersRepository";
-import { Readable } from "stream";
-import { SpeakerRepository } from "../../model/repository/speakerRepository";
-import { DISCORD_CLIENT } from "../../constant/constants";
-import { Logger } from "../../common/logger";
-import { LogLevel } from "../../type/types";
+import got from 'got';
+import { AudioResponse } from '../../interface/audioResponse';
+import * as Models from '../../model/models';
+import { convertMessageWithoutEmoji, convertVoiceId, SPEAKER_IDS } from '../../common/common';
+import {
+  AudioPlayer,
+  AudioPlayerStatus,
+  createAudioPlayer,
+  createAudioResource,
+  DiscordGatewayAdapterCreator,
+  entersState,
+  getVoiceConnection,
+  joinVoiceChannel,
+  NoSubscriberBehavior,
+  StreamType,
+  VoiceConnection,
+} from '@discordjs/voice';
+import { EmbedBuilder, VoiceBasedChannel, VoiceChannel } from 'discord.js';
+import { UsersRepository } from '../../model/repository/usersRepository';
+import { Readable } from 'stream';
+import { SpeakerRepository } from '../../model/repository/speakerRepository';
+import { DISCORD_CLIENT } from '../../constant/constants';
+import { Logger } from '../../common/logger';
+import { LogLevel } from '../../type/types';
 
 export const Speaker = {
-  player: [] as Player[]
+  player: [] as Player[],
 };
 
 export interface Player {
@@ -47,7 +59,7 @@ export async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): 
       user_id: 'system',
       level: LogLevel.INFO,
       event: 'initAudioPlayer',
-      message: [`Player already exists`]
+      message: [`Player already exists`],
     });
     return null;
   }
@@ -61,23 +73,21 @@ export async function initAudioPlayer(gid: string, channel: VoiceBasedChannel): 
         channelId: channel.id,
         guildId: channel.guild.id,
         selfDeaf: true,
-        selfMute: false
+        selfMute: false,
       }),
       player: createAudioPlayer({
         behaviors: {
-          noSubscriber: NoSubscriberBehavior.Stop
-        }
+          noSubscriber: NoSubscriberBehavior.Stop,
+        },
       }),
       status: AudioPlayerStatus.Idle,
-      chat: []
-    }
+      chat: [],
+    },
   };
   p.channel.connection.subscribe(p.channel.player);
   Speaker.player.push(p);
   return Speaker.player.find((p) => p.guild_id === gid)!;
 }
-
-
 
 /**
  * initialize speaker
@@ -87,17 +97,13 @@ export const initialize = async (id: number): Promise<void> => {
   const isInitializedUri = `http://127.0.0.1:50021/is_initialized_speaker`;
 
   if (id < 1000) {
-    const isInitialized = (await got
-      .get(isInitializedUri, { searchParams: { speaker: id } })
-      .json()) as boolean;
+    const isInitialized = (await got.get(isInitializedUri, { searchParams: { speaker: id } }).json()) as boolean;
 
     if (!isInitialized) {
-      await got
-        .post(`http://127.0.0.1:50021/initialize_speaker`, { searchParams: { speaker: id } })
-        .json();
+      await got.post(`http://127.0.0.1:50021/initialize_speaker`, { searchParams: { speaker: id } }).json();
     }
   }
-}
+};
 
 /**
  * プレイヤーを更新する
@@ -115,9 +121,9 @@ export async function getAudioPlayer(gid: string, channel: VoiceBasedChannel): P
 }
 
 /**
-* プレイヤーを削除する
-* @param gid
-*/
+ * プレイヤーを削除する
+ * @param gid
+ */
 export async function removeAudioPlayer(channel: VoiceBasedChannel): Promise<boolean> {
   const PlayerData = Speaker.player.find((p) => p.guild_id === channel.guild.id);
   if (PlayerData) {
@@ -133,10 +139,7 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
   const user = await usersRepository.get(uid);
 
   if (!user) {
-    const send = new EmbedBuilder()
-      .setColor('#ff0000')
-      .setTitle(`エラー`)
-      .setDescription(`ユーザーが見つからなかった`);
+    const send = new EmbedBuilder().setColor('#ff0000').setTitle(`エラー`).setDescription(`ユーザーが見つからなかった`);
     channel.send({ embeds: [send] });
     return;
   }
@@ -168,13 +171,13 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
 
   PlayerData.channel.chat.push({
     user_id: uid,
-    message: stream
+    message: stream,
   });
 }
 
 /**
-* 読み上げる
-*/
+ * 読み上げる
+ */
 export async function speak(): Promise<void> {
   Speaker.player.map(async (speaker) => {
     if (speaker.channel.status !== AudioPlayerStatus.Idle) {
@@ -197,8 +200,6 @@ export async function speak(): Promise<void> {
   });
 }
 
-
-
 /**
  * 音声を合成してストリームを返す
  * @param user
@@ -219,7 +220,7 @@ export const audioQuery = async (user: Models.Users, message: string): Promise<B
       .post(synthesisUri, {
         searchParams: { speaker: user.voice_id },
         json: { ...audioQuery, speedScale: user.voice_speed },
-        responseType: 'buffer'
+        responseType: 'buffer',
       })
       .buffer();
 
@@ -233,21 +234,20 @@ export const audioQuery = async (user: Models.Users, message: string): Promise<B
     const stream = await got
       .post(coeiroSynthesisUri, {
         json: {
-          "speakerUuid": speaker.uuid,
-          "styleId": speaker.styleId,
-          "text": message,
-          "speedScale": user.voice_speed,
-          "volumeScale": 1.0,
-          "pitchScale": user.voice_pitch * 0.01,
-          "intonationScale": user.voice_intonation,
-          "prePhonemeLength": 1.0,
-          "postPhonemeLength": 1.0,
-          "outputSamplingRate": 44100
+          speakerUuid: speaker.uuid,
+          styleId: speaker.styleId,
+          text: message,
+          speedScale: user.voice_speed,
+          volumeScale: 1.0,
+          pitchScale: user.voice_pitch * 0.01,
+          intonationScale: user.voice_intonation,
+          prePhonemeLength: 1.0,
+          postPhonemeLength: 1.0,
+          outputSamplingRate: 44100,
         },
-        responseType: 'buffer'
+        responseType: 'buffer',
       })
       .buffer();
     return stream;
   }
 };
-

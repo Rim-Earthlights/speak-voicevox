@@ -1,17 +1,17 @@
-import { EmbedBuilder, Message } from "discord.js";
-import { ChatGPTModel } from "../../config/config";
-import * as ChatService from "../service/chatService";
-import dayjs from "dayjs";
-import { Logger } from "../../common/logger";
-import { GPTMode, LogLevel, Role } from "../../type/types";
-import { ChatCompletionContentPart } from "openai/resources";
+import { EmbedBuilder, Message } from 'discord.js';
+import { ChatGPTModel } from '../../config/config';
+import * as ChatService from '../service/chatService';
+import dayjs from 'dayjs';
+import { Logger } from '../../common/logger';
+import { GPTMode, LogLevel, Role } from '../../type/types';
+import { ChatCompletionContentPart } from 'openai/resources';
 
 /**
  * ChatGPTで会話する
  */
 export async function talk(message: Message, content: string, model: ChatGPTModel, mode: GPTMode) {
   const { id, isGuild } = getIdInfo(message);
-  let gpt = ChatService.gptList.gpt.find(c => c.id === id);
+  let gpt = ChatService.gptList.gpt.find((c) => c.id === id);
   if (!gpt) {
     gpt = await ChatService.initalize(id, model, mode, isGuild);
     ChatService.gptList.gpt.push(gpt);
@@ -19,16 +19,16 @@ export async function talk(message: Message, content: string, model: ChatGPTMode
   const openai = gpt.openai;
   let weather = undefined;
 
-  const user = message.mentions.users.map(u => {
+  const user = message.mentions.users.map((u) => {
     return {
       mention_id: `<@${u.id}>`,
-      name: u.displayName
-    }
+      name: u.displayName,
+    };
   });
-  if (!user.find(u => u.mention_id === `<@${message.author.id}>`)) {
+  if (!user.find((u) => u.mention_id === `<@${message.author.id}>`)) {
     user.push({
       mention_id: `<@${message.author.id}>`,
-      name: message.author.displayName
+      name: message.author.displayName,
     });
   }
 
@@ -42,16 +42,16 @@ export async function talk(message: Message, content: string, model: ChatGPTMode
   const sendContent = `${JSON.stringify(systemContent)}\n${content}`;
 
   if (message.attachments) {
-    const attachmentUrls = message.attachments.filter(a => a.height && a.width).map(a => a.url);
-    const urls = attachmentUrls.map(u => ({ type: 'image_url', image_url: { url: u } }));
+    const attachmentUrls = message.attachments.filter((a) => a.height && a.width).map((a) => a.url);
+    const urls = attachmentUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }));
     gpt.chat.push({
       role: Role.USER,
-      content: [{ type: 'text', text: sendContent }, ...urls] as Array<ChatCompletionContentPart>
+      content: [{ type: 'text', text: sendContent }, ...urls] as Array<ChatCompletionContentPart>,
     });
   } else {
     gpt.chat.push({
       role: Role.USER,
-      content: sendContent
+      content: sendContent,
     });
   }
 
@@ -61,10 +61,7 @@ export async function talk(message: Message, content: string, model: ChatGPTMode
     user_id: message.author.id,
     level: LogLevel.INFO,
     event: 'ChatGPT',
-    message: [
-      `Request:`,
-      sendContent
-    ]
+    message: [`Request:`, sendContent],
   });
 
   const response = await openai.chat.completions.create({
@@ -110,15 +107,15 @@ export async function talk(message: Message, content: string, model: ChatGPTMode
       `Usage: ${JSON.stringify(response.usage)}`,
       `Model: ${response.model}`,
       `Response:`,
-      `${completion.content}`
-    ]
+      `${completion.content}`,
+    ],
   });
 }
 
 function getIdInfo(message: Message) {
   const guild = message.guild;
   if (!guild) {
-    return { id: message.channel.id, isGuild: false, };
+    return { id: message.channel.id, isGuild: false };
   }
-  return { id: guild.id, isGuild: true, };
+  return { id: guild.id, isGuild: true };
 }

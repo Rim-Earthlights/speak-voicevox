@@ -1,7 +1,6 @@
-import { Repository } from "typeorm";
-import { TypeOrm } from "../typeorm/typeorm";
-import * as Models from "../models/index.js";
-
+import { Repository } from 'typeorm';
+import { TypeOrm } from '../typeorm/typeorm';
+import * as Models from '../models/index.js';
 
 export class GuildRepository {
   private repository: Repository<Models.Guild>;
