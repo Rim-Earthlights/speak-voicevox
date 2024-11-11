@@ -24,7 +24,7 @@ export async function initalize(id: string, model: ChatGPTModel, mode: GPTMode, 
   if (mode === GPTMode.DEFAULT) {
     gpt.chat.push({
       role: Role.SYSTEM,
-      content: CONFIG.NAME === 'lemon' ? CHATBOT_LEMON_TEMPLATE : CHATBOT_LIME_TEMPLATE
+      content: CONFIG.NAME === 'lemon' ? CHATBOT_LEMON_TEMPLATE : CHATBOT_LIME_TEMPLATE,
     });
   }
   return gpt;
@@ -41,14 +41,14 @@ export type ChatGPT = {
 
 export enum GPTMode {
   DEFAULT = 'default',
-  NOPROMPT = 'no_prompt'
-};
+  NOPROMPT = 'no_prompt',
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type VisionMessage = {
   role: Role;
   content: VisionContent;
-}
+};
 
 type VisionContent = {
   type: 'text' | 'image_url';
@@ -60,4 +60,4 @@ export enum Role {
   SYSTEM = 'system',
   USER = 'user',
   ASSISTANT = 'assistant',
-};
+}

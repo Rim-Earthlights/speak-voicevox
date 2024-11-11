@@ -9,9 +9,9 @@ import { URLSearchParams } from 'url';
  * @returns AxiosResponse
  */
 export async function getAsync(uri: string, params: URLSearchParams): Promise<AxiosResponse> {
-    return await axios.get(uri, { params });
+  return await axios.get(uri, { params });
 }
 
 export async function postAsync(uri: string, params?: URLSearchParams): Promise<AxiosResponse> {
-    return await axios.post(uri, { params });
+  return await axios.post(uri, { params });
 }

@@ -1,10 +1,10 @@
-import { CacheType, ChatInputCommandInteraction, EmbedBuilder, GuildMember, VoiceBasedChannel } from "discord.js";
-import { SpeakerRepository } from "../../model/repository/speakerRepository";
-import { DISCORD_CLIENT } from "../../constant/constants";
-import { UsersRepository } from "../../model/repository/usersRepository";
-import { CONFIG } from "../../config/config";
+import { CacheType, ChatInputCommandInteraction, EmbedBuilder, GuildMember, VoiceBasedChannel } from 'discord.js';
+import { SpeakerRepository } from '../../model/repository/speakerRepository';
+import { DISCORD_CLIENT } from '../../constant/constants';
+import { UsersRepository } from '../../model/repository/usersRepository';
+import { CONFIG } from '../../config/config';
 import * as SpeakService from '../service/speakService';
-import { getVoiceConnection } from "@discordjs/voice";
+import { getVoiceConnection } from '@discordjs/voice';
 
 export async function CallSpeaker(interaction: ChatInputCommandInteraction<CacheType>, isForce = false) {
   if (!interaction.guild || !DISCORD_CLIENT.user) {
@@ -89,7 +89,7 @@ export async function ready(interaction: ChatInputCommandInteraction<CacheType>,
 
   interaction.reply({ embeds: [send] });
 
-  setTimeout(() => { }, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
+  setTimeout(() => {}, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
   const repository = new SpeakerRepository();
   await repository.updateUsedSpeaker(interaction.guild!.id, DISCORD_CLIENT.user!.id, true);
 }

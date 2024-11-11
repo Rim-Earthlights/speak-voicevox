@@ -1,7 +1,7 @@
-import OpenAI from "openai";
-import { ChatGPTModel } from "../config/config";
-import { ChatCompletionMessageParam } from "openai/resources";
-import dayjs from "dayjs";
+import OpenAI from 'openai';
+import { ChatGPTModel } from '../config/config';
+import { ChatCompletionMessageParam } from 'openai/resources';
+import dayjs from 'dayjs';
 
 export type LogData = {
   guild_id?: string;
@@ -15,7 +15,7 @@ export type LogData = {
 export enum LogLevel {
   INFO = 'info',
   ERROR = 'error',
-  SYSTEM = 'system'
+  SYSTEM = 'system',
 }
 
 export type ChatGPT = {
@@ -29,14 +29,14 @@ export type ChatGPT = {
 
 export enum GPTMode {
   DEFAULT = 'default',
-  NOPROMPT = 'no_prompt'
-};
+  NOPROMPT = 'no_prompt',
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type VisionMessage = {
   role: Role;
   content: VisionContent;
-}
+};
 
 type VisionContent = {
   type: 'text' | 'image_url';
@@ -48,4 +48,4 @@ export enum Role {
   SYSTEM = 'system',
   USER = 'user',
   ASSISTANT = 'assistant',
-};
+}

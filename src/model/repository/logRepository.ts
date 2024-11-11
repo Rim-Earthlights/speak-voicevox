@@ -28,7 +28,7 @@ export class LogRepository {
   public async getLastCallJoinDate(guildId: string, userId: string): Promise<Date | null> {
     const log = await this.repository.findOne({
       where: { guild_id: guildId, user_id: userId, event: 'vc-join' },
-      order: { created_at: 'DESC' }
+      order: { created_at: 'DESC' },
     });
     if (!log) {
       return null;

@@ -37,7 +37,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "yarn run eslint src/**/*.ts",
     "dev": "yarn run nodemon -x \"npm run dist\" -w src/app.ts -e ts,json",
-    "compile": "yarn run tsc",
+    "build": "yarn run tsc",
     "dist": "node --loader ts-node/esm --es-module-specifier-resolution=node src/app.ts"
   }
 }

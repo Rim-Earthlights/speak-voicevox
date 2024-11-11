@@ -1,57 +1,57 @@
 export interface AudioResponse {
-    accent_phrases: [
+  accent_phrases: [
+    {
+      moras: [
         {
-            moras: [
-                {
-                    text: string;
-                    consonant: string;
-                    consonant_length: number;
-                    vowel: string;
-                    vowel_length: number;
-                    pitch: number;
-                }
-            ];
-            accent: number;
-            pause_mora: string | null;
-            is_interrogative: boolean;
+          text: string;
+          consonant: string;
+          consonant_length: number;
+          vowel: string;
+          vowel_length: number;
+          pitch: number;
         }
-    ];
-    speedScale: number;
-    pitchScale: number;
-    intonationScale: number;
-    volumeScale: number;
-    prePhonemeLength: number;
-    postPhonemeLength: number;
-    outputSamplingRate: number;
-    outputStereo: boolean;
-    kana: string;
+      ];
+      accent: number;
+      pause_mora: string | null;
+      is_interrogative: boolean;
+    }
+  ];
+  speedScale: number;
+  pitchScale: number;
+  intonationScale: number;
+  volumeScale: number;
+  prePhonemeLength: number;
+  postPhonemeLength: number;
+  outputSamplingRate: number;
+  outputStereo: boolean;
+  kana: string;
 }
 export interface SpeakersResponse {
-    supported_features: {
-        permitted_synthesis_morphing: "ALL" | "SELF_ONLY";
-    },
-    name: string;
-    speaker_uuid: string;
-    styles: [
-        {
-            name: string;
-            id: number;
-        }
-    ];
-    version: string;
+  supported_features: {
+    permitted_synthesis_morphing: 'ALL' | 'SELF_ONLY';
+  };
+  name: string;
+  speaker_uuid: string;
+  styles: [
+    {
+      name: string;
+      id: number;
+    }
+  ];
+  version: string;
 }
 
 export interface CoeiroSpeakersResponse {
-    speakerName: string;
-    speakerUuid: string;
-    styles: [
-        {
-            styleName: string;
-            styleId: number;
-            base64Icon: string;
-            base64Portrait: string;
-        }
-    ];
-    version: string;
-    base64Portrait: string;
-};
+  speakerName: string;
+  speakerUuid: string;
+  styles: [
+    {
+      styleName: string;
+      styleId: number;
+      base64Icon: string;
+      base64Portrait: string;
+    }
+  ];
+  version: string;
+  base64Portrait: string;
+}
