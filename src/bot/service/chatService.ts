@@ -24,7 +24,7 @@ export async function initalize(id: string, model: ChatGPTModel, mode: GPTMode, 
   if (mode === GPTMode.DEFAULT) {
     gpt.chat.push({
       role: Role.SYSTEM,
-      content: CONFIG.COMMAND.SPEAK.SLASH_COMMAND_NAME === 'lemon' ? CHATBOT_LEMON_TEMPLATE : CHATBOT_LIME_TEMPLATE
+      content: CONFIG.NAME === 'lemon' ? CHATBOT_LEMON_TEMPLATE : CHATBOT_LIME_TEMPLATE
     });
   }
   return gpt;

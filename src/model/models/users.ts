@@ -6,6 +6,7 @@ import {
     Entity,
     OneToMany,
     PrimaryColumn,
+    Relation,
     UpdateDateColumn
 } from 'typeorm';
 import { Gacha } from './gacha.js';
@@ -20,6 +21,9 @@ export class Users extends BaseEntity {
 
     @Column({ type: 'varchar', width: 255, nullable: true })
     nickname: string | null = null;
+
+    @Column({ type: 'varchar', nullable: false, default: 'member' })
+    type!: UsersType;
 
     @Column({ type: 'varchar', width: 255, nullable: true })
     pref: string | null = null;
@@ -39,6 +43,15 @@ export class Users extends BaseEntity {
     @Column({ type: 'float', nullable: false, default: 1.0 })
     voice_speed!: number;
 
+    @Column({ type: 'float', nullable: false, default: 0.0 })
+    voice_pitch!: number;
+
+    @Column({ type: 'float', nullable: false, default: 1.0 })
+    voice_intonation!: number;
+
+    @Column({ type: 'json', nullable: true })
+    voice_channel_data: VoiceChannelData[] | null = null;
+
     @DeleteDateColumn({ type: 'datetime', nullable: true })
     deleted_at: Date | null = null;
 
@@ -49,5 +62,17 @@ export class Users extends BaseEntity {
     created_at!: Date;
 
     @OneToMany(() => Gacha, (g) => g.user_id)
-    gacha?: Gacha[];
+    gacha?: Relation<Gacha>[];
 }
+
+export enum UsersType {
+    MEMBER = 'member',
+    BOT = 'bot',
+    ADMIN = 'admin',
+    OWNER = 'owner'
+}
+
+export type VoiceChannelData = {
+    gid: string;
+    date: Date;
+};

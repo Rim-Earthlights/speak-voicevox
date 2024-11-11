@@ -1,0 +1,18 @@
+{
+    "TOKEN": "",
+    "APP_ID": "",
+    "NAME": "",
+    "COMMAND": {
+        "SPEAK": {
+            "COMMAND_NAME": "speak",
+            "SLEEP_TIME": 0
+        },
+        "SPEAKER_CONFIG": {
+            "ENABLE": true,
+            "COMMAND_NAME": "speaker-config",
+            "COMMAND_NAME_SHORT": "spcon",
+            "COMMAND_RESET": "sp-reload"
+        },
+        "DISCONNECT": "discon"
+    }
+}
