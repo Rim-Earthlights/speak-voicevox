@@ -1,5 +1,5 @@
-import { ChannelType, Message, REST, Routes, SlashCommandBuilder, VoiceBasedChannel } from 'discord.js';
-import { commandSelector } from './bot/commands.js';
+import { ChannelType, Message, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes, SlashCommandBuilder, VoiceBasedChannel } from 'discord.js';
+import { commandSelector, interactionSelector } from './bot/commands.js';
 import 'dayjs/locale/ja';
 import { DISCORD_CLIENT } from './constant/constants.js';
 import { CONFIG, CommandConfig } from './config/config.js';
@@ -12,7 +12,6 @@ import { joinVoiceChannel, leftVoiceChannel } from './bot/dot_function/room.js';
 import { fs } from 'mz';
 import { SpeakerRepository } from './model/repository/speakerRepository.js';
 import { initializeCoeiroSpeakerIds } from './common/common.js';
-import { SLASH_COMMANDS } from './constant/slashCommands.js';
 import { GuildRepository } from './model/repository/guildRepository.js';
 import { Logger } from './common/logger.js';
 import { GPTMode, LogLevel } from './type/types.js';
@@ -33,6 +32,7 @@ if (!data.COMMAND.SPEAK) {
 
 CONFIG.TOKEN = data.TOKEN;
 CONFIG.APP_ID = data.APP_ID;
+CONFIG.NAME = data.NAME;
 CONFIG.COMMAND = data.COMMAND;
 
 console.log('==================================================');
@@ -67,7 +67,26 @@ TypeOrm.dataSource
  * =======================
  */
 
-const commands = SLASH_COMMANDS.map((command) => command.toJSON());
+let commands: RESTPostAPIChatInputApplicationCommandsJSONBody[];
+
+const serverCommands = [
+    new SlashCommandBuilder()
+        .setName(CONFIG.NAME)
+        .setDescription('読み上げを呼び出す'),
+].map((command) => command.toJSON());
+
+const dmCommands = [
+    new SlashCommandBuilder()
+        .setName('erase')
+        .setDescription('チャット履歴を削除する'),
+    new SlashCommandBuilder()
+        .setName(CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME_SHORT)
+        .setDescription('スピーカーの設定を行う')
+        .addNumberOption((option) => option.setName('voice_id').setDescription('使用する声のID'))
+        .addNumberOption((option) => option.setName('speed').setDescription('話す速度 1が標準 (0.5 - 2.0)'))
+        .addNumberOption((option) => option.setName('pitch').setDescription('声のピッチ 高さ変更, 0が標準 (-1.0 - 1.0)'))
+        .addNumberOption((option) => option.setName('intonation').setDescription('声の抑揚 下げるほど棒読み 1が標準 (0.0 - 1.0)')),
+].map((command) => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(CONFIG.TOKEN);
 DISCORD_CLIENT.login(CONFIG.TOKEN);
@@ -79,8 +98,23 @@ DISCORD_CLIENT.once('ready', async () => {
     await initJob();
     await initializeCoeiroSpeakerIds();
 
+    const guilds = await DISCORD_CLIENT.guilds.fetch();
+    guilds.forEach(async (guild) => {
+        rest.put(Routes.applicationGuildCommands(CONFIG.APP_ID, guild.id), { body: serverCommands }).then(
+            async () =>
+                await Logger.put({
+                    guild_id: guild.id,
+                    channel_id: undefined,
+                    user_id: undefined,
+                    level: LogLevel.SYSTEM,
+                    event: 'reg-command|add',
+                    message: [`successfully add command to guild: ${guild.name}.`]
+                })
+        ).catch(console.error);
+    });
+
     // スラッシュコマンドの登録
-    rest.put(Routes.applicationCommands(CONFIG.APP_ID), { body: commands }).then(async () => {
+    rest.put(Routes.applicationCommands(CONFIG.APP_ID), { body: dmCommands }).then(async () => {
         await Logger.put({
             guild_id: undefined,
             channel_id: undefined,
@@ -140,7 +174,7 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
         return;
     }
 
-    if (message.content.startsWith(`<@${DISCORD_CLIENT.user?.id}>`) && message.content.trimEnd() !== `<@${DISCORD_CLIENT.user?.id}>`) {
+    if (message.content.includes(`<@${DISCORD_CLIENT.user?.id}>`) && message.content.trimEnd() !== `<@${DISCORD_CLIENT.user?.id}>`) {
         await DotBotFunctions.Chat.talk(message, message.content, CONFIG.OPENAI.DEFAULT_MODEL, GPTMode.DEFAULT);
         return;
     }
@@ -174,6 +208,28 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
             await SpeakService.addQueue(message.channel as VoiceBasedChannel, message.content, message.author.id);
         }
     }
+});
+
+/**
+ * コマンドの受信イベント
+ */
+DISCORD_CLIENT.on('interactionCreate', async (interaction) => {
+    if (!interaction.isChatInputCommand()) {
+        return;
+    }
+    await Logger.put({
+        guild_id: interaction.guild ? interaction.guild.id : undefined,
+        channel_id: interaction.channel?.id,
+        user_id: interaction.user.id,
+        level: LogLevel.INFO,
+        event: 'interaction-received',
+        message: [
+            `cid: ${interaction.channel?.id}`,
+            `author: ${interaction.user.displayName}`,
+            `content: ${interaction}`
+        ]
+    });
+    await interactionSelector(interaction);
 });
 
 DISCORD_CLIENT.on('voiceStateUpdate', async (oldState, newState) => {

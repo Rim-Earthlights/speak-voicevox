@@ -238,8 +238,8 @@ export const audioQuery = async (user: Models.Users, message: string): Promise<B
           "text": message,
           "speedScale": user.voice_speed,
           "volumeScale": 1.0,
-          "pitchScale": 0,
-          "intonationScale": 1.0,
+          "pitchScale": user.voice_pitch * 0.01,
+          "intonationScale": user.voice_intonation,
           "prePhonemeLength": 1.0,
           "postPhonemeLength": 1.0,
           "outputSamplingRate": 44100
