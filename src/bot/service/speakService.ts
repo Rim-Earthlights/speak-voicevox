@@ -1,7 +1,3 @@
-import got from 'got';
-import { AudioResponse } from '../../interface/audioResponse';
-import * as Models from '../../model/models';
-import { convertMessageWithoutEmoji, convertVoiceId, SPEAKER_IDS } from '../../common/common';
 import {
   AudioPlayer,
   AudioPlayerStatus,
@@ -9,18 +5,19 @@ import {
   createAudioResource,
   DiscordGatewayAdapterCreator,
   entersState,
-  getVoiceConnection,
   joinVoiceChannel,
   NoSubscriberBehavior,
   StreamType,
-  VoiceConnection,
+  VoiceConnection
 } from '@discordjs/voice';
-import { EmbedBuilder, VoiceBasedChannel, VoiceChannel } from 'discord.js';
-import { UsersRepository } from '../../model/repository/usersRepository';
+import { EmbedBuilder, VoiceBasedChannel } from 'discord.js';
+import got from 'got';
 import { Readable } from 'stream';
-import { SpeakerRepository } from '../../model/repository/speakerRepository';
-import { DISCORD_CLIENT } from '../../constant/constants';
+import { convertMessageWithoutEmoji, SPEAKER_IDS } from '../../common/common';
 import { Logger } from '../../common/logger';
+import { AudioResponse } from '../../interface/audioResponse';
+import * as Models from '../../model/models';
+import { UsersRepository } from '../../model/repository/usersRepository';
 import { LogLevel } from '../../type/types';
 
 export const Speaker = {
@@ -239,7 +236,7 @@ export const audioQuery = async (user: Models.Users, message: string): Promise<B
           text: message,
           speedScale: user.voice_speed,
           volumeScale: 1.0,
-          pitchScale: user.voice_pitch * 0.01,
+          pitchScale: user.voice_pitch,
           intonationScale: user.voice_intonation,
           prePhonemeLength: 1.0,
           postPhonemeLength: 1.0,

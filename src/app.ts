@@ -1,3 +1,4 @@
+import 'dayjs/locale/ja';
 import {
   ChannelType,
   Message,
@@ -7,21 +8,18 @@ import {
   SlashCommandBuilder,
   VoiceBasedChannel,
 } from 'discord.js';
-import { commandSelector, interactionSelector } from './bot/commands.js';
-import 'dayjs/locale/ja';
-import { DISCORD_CLIENT } from './constant/constants.js';
-import { CONFIG, CommandConfig } from './config/config.js';
-import { TypeOrm } from './model/typeorm/typeorm.js';
-import * as BotFunctions from './bot/function';
-import * as DotBotFunctions from './bot/dot_function';
-import * as SpeakService from './bot/service/speakService.js';
-import { initJob } from './job/job.js';
-import { joinVoiceChannel, leftVoiceChannel } from './bot/dot_function/room.js';
 import { fs } from 'mz';
-import { SpeakerRepository } from './model/repository/speakerRepository.js';
+import { commandSelector, interactionSelector } from './bot/commands.js';
+import * as DotBotFunctions from './bot/dot_function';
+import { joinVoiceChannel, leftVoiceChannel } from './bot/dot_function/room.js';
+import * as SpeakService from './bot/service/speakService.js';
 import { initializeCoeiroSpeakerIds } from './common/common.js';
-import { GuildRepository } from './model/repository/guildRepository.js';
 import { Logger } from './common/logger.js';
+import { CONFIG, CommandConfig } from './config/config.js';
+import { DISCORD_CLIENT } from './constant/constants.js';
+import { initJob } from './job/job.js';
+import { SpeakerRepository } from './model/repository/speakerRepository.js';
+import { TypeOrm } from './model/typeorm/typeorm.js';
 import { GPTMode, LogLevel } from './type/types.js';
 
 // read config file
@@ -86,9 +84,9 @@ const dmCommands = [
   new SlashCommandBuilder()
     .setName(CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME_SHORT)
     .setDescription('スピーカーの設定を行う')
-    .addNumberOption((option) => option.setName('voice_id').setDescription('使用する声のID'))
+    .addNumberOption((option) => option.setName('voice_id').setDescription('使用する声のID').setRequired(true))
     .addNumberOption((option) => option.setName('speed').setDescription('話す速度 1が標準 (0.5 - 2.0)'))
-    .addNumberOption((option) => option.setName('pitch').setDescription('声のピッチ 高さ変更, 0が標準 (-1.0 - 1.0)'))
+    .addNumberOption((option) => option.setName('pitch').setDescription('声のピッチ 高さ変更, 0が標準 (-0.1 - 0.1くらい目安)'))
     .addNumberOption((option) =>
       option.setName('intonation').setDescription('声の抑揚 下げるほど棒読み 1が標準 (0.0 - 1.0)')
     ),

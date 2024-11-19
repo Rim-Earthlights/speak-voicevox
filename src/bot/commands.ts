@@ -1,10 +1,10 @@
 import { CacheType, ChatInputCommandInteraction, EmbedBuilder, Message } from 'discord.js';
-import * as DotBotFunctions from './dot_function';
-import * as BotFunctions from './function';
-import { UsersRepository } from '../model/repository/usersRepository';
 import { findVoiceFromId, initializeCoeiroSpeakerIds } from '../common/common';
 import { CONFIG } from '../config/config';
+import { UsersRepository } from '../model/repository/usersRepository';
 import { GPTMode } from '../type/types';
+import * as DotBotFunctions from './dot_function';
+import * as BotFunctions from './function';
 
 /**
  * 渡されたコマンドから処理を実行する
@@ -120,10 +120,10 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
       const usersRepository = new UsersRepository();
       const user = await usersRepository.get(interaction.user.id);
 
-      const voiceType = Number(interaction.options.getInteger('voice_id') || 3);
-      const voiceSpeed = Number(interaction.options.getInteger('speed') || 1.0);
-      const voicePitch = Number(interaction.options.getInteger('pitch') || 0.0);
-      const voiceIntonation = Number(interaction.options.getInteger('intonation') || 1.0);
+      const voiceType = interaction.options.getNumber('voice_id');
+      const voiceSpeed = interaction.options.getNumber('speed') || 1.0;
+      const voicePitch = interaction.options.getNumber('pitch') || 0.0;
+      const voiceIntonation = interaction.options.getNumber('intonation') || 1.0;
 
       if (voiceSpeed < 0.1 || 5.0 < voiceSpeed) {
         await interaction.editReply({ content: 'スピードは0.1から5.0の間で設定してください。' });
@@ -135,12 +135,20 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
         return;
       }
 
-      if (!voiceType && !voiceSpeed && !voicePitch && !voiceIntonation) {
+      if (!voiceType) {
         const voiceName = await findVoiceFromId(user.voice_id);
+
+        const description = [
+          `声: ${voiceName}(${user.voice_id})`,
+          `スピード: ${user.voice_speed}`,
+          `ピッチ: ${user.voice_pitch}`,
+          `抑揚: ${user.voice_intonation}`,
+        ].join('\n');
+
         const send = new EmbedBuilder()
           .setColor('#00ffff')
           .setTitle(`現在の設定`)
-          .setDescription(`声: ${voiceName}(${user.voice_id})\nスピード: ${user.voice_speed}`);
+          .setDescription(description);
         await interaction.editReply({ embeds: [send] });
         return;
       }
