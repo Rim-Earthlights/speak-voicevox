@@ -1,26 +1,11 @@
 import {
-  AudioPlayer,
-  AudioPlayerStatus,
-  createAudioPlayer,
-  createAudioResource,
-  DiscordGatewayAdapterCreator,
-  entersState,
-  getVoiceConnection,
-  joinVoiceChannel,
-  NoSubscriberBehavior,
-  StreamType,
-  VoiceConnection,
+  getVoiceConnection
 } from '@discordjs/voice';
 import { EmbedBuilder, Message, VoiceBasedChannel, VoiceChannel } from 'discord.js';
-import got from 'got';
-import { Readable } from 'stream';
-import { AudioResponse } from '../../interface/audioResponse';
-import { UsersRepository } from '../../model/repository/usersRepository';
 import { CONFIG } from '../../config/config';
-import * as logger from '../../common/logger.js';
-import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { DISCORD_CLIENT } from '../../constant/constants';
-import { convertMessageWithoutEmoji } from '../../common/common';
+import { SpeakerRepository } from '../../model/repository/speakerRepository';
+import { UsersRepository } from '../../model/repository/usersRepository';
 import * as SpeakService from '../service/speakService';
 
 /**
@@ -84,7 +69,7 @@ export async function CallSpeaker(message: Message, isForce = false) {
  */
 export async function ready(channel: VoiceBasedChannel, uid: string): Promise<void> {
   const usersRepository = new UsersRepository();
-  const user = await usersRepository.get(uid);
+  const user = await usersRepository.get(channel.guild.id, uid);
 
   if (!user) {
     if (CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
@@ -97,7 +82,7 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
     return;
   }
 
-  await SpeakService.initialize(user.voice_id);
+  await SpeakService.initialize(user.userSetting.voice_id);
 
   const p = await SpeakService.initAudioPlayer(channel.guild.id, channel);
 
@@ -118,7 +103,7 @@ export async function ready(channel: VoiceBasedChannel, uid: string): Promise<vo
 
   (channel as VoiceChannel).send({ embeds: [send] });
 
-  setTimeout(() => {}, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
+  setTimeout(() => { }, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
   const repository = new SpeakerRepository();
   await repository.updateUsedSpeaker(channel.guild.id, DISCORD_CLIENT.user!.id, true);
 }

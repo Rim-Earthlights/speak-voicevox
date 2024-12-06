@@ -86,7 +86,9 @@ const dmCommands = [
     .setDescription('スピーカーの設定を行う')
     .addNumberOption((option) => option.setName('voice_id').setDescription('使用する声のID').setRequired(true))
     .addNumberOption((option) => option.setName('speed').setDescription('話す速度 1が標準 (0.5 - 2.0)'))
-    .addNumberOption((option) => option.setName('pitch').setDescription('声のピッチ 高さ変更, 0が標準 (-0.1 - 0.1くらい目安)'))
+    .addNumberOption((option) =>
+      option.setName('pitch').setDescription('声のピッチ 高さ変更, 0が標準 (-0.1 - 0.1くらい目安)')
+    )
     .addNumberOption((option) =>
       option.setName('intonation').setDescription('声の抑揚 下げるほど棒読み 1が標準 (0.0 - 1.0)')
     ),
