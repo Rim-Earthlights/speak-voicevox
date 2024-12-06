@@ -4,9 +4,12 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  OneToMany,
   PrimaryColumn,
+  Relation,
   UpdateDateColumn,
 } from 'typeorm';
+import { Users } from './users.js';
 
 @Entity({ engine: 'InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci' })
 export class Guild extends BaseEntity {
@@ -36,4 +39,7 @@ export class Guild extends BaseEntity {
 
   @CreateDateColumn({ type: 'datetime', nullable: false })
   created_at!: Date;
+
+  @OneToMany(() => Users, (user) => user.guild_id)
+  users!: Relation<Users>[];
 }

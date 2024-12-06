@@ -1,11 +1,11 @@
-import { VoiceChannel, VoiceState } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
-import { SpeakerRepository } from '../../model/repository/speakerRepository';
-import { DISCORD_CLIENT } from '../../constant/constants';
-import { UsersRepository } from '../../model/repository/usersRepository';
-import * as SpeakService from '../service/speakService';
+import { VoiceChannel, VoiceState } from 'discord.js';
 import { Logger } from '../../common/logger';
+import { DISCORD_CLIENT } from '../../constant/constants';
+import { SpeakerRepository } from '../../model/repository/speakerRepository';
+import { UsersRepository } from '../../model/repository/usersRepository';
 import { LogLevel } from '../../type/types';
+import * as SpeakService from '../service/speakService';
 
 /**
  * ボイスチャンネルから切断した時の処理
@@ -68,8 +68,8 @@ export async function leftVoiceChannel(voiceState: VoiceState, newState?: VoiceS
     if (speaker) {
       if (voiceState.member) {
         const usersRepository = new UsersRepository();
-        const user = await usersRepository.get(voiceState.member.id);
-        let username = user?.nickname;
+        const user = await usersRepository.get(voiceState.guild.id, voiceState.member.id);
+        let username = user?.userSetting.nickname;
         if (!username) {
           username = voiceState.member.displayName;
         }
@@ -113,8 +113,8 @@ export async function joinVoiceChannel(voiceState: VoiceState): Promise<void> {
   if (speaker) {
     if (voiceState.member) {
       const usersRepository = new UsersRepository();
-      const user = await usersRepository.get(voiceState.member.id);
-      let username = user?.nickname;
+      const user = await usersRepository.get(voiceState.guild.id, voiceState.member.id);
+      let username = user?.userSetting.nickname;
       if (!username) {
         username = voiceState.member.displayName;
       }

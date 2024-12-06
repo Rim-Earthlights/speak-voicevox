@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import { CONFIG } from '../../config/config';
-import * as Models from '../models';
+import * as Models from '../models/index';
 
 export class TypeOrm {
   static dataSource = new DataSource({
@@ -25,6 +25,7 @@ export class TypeOrm {
       Models.ItemRank,
       Models.Speaker,
       Models.Log,
+      Models.UserSetting,
     ], // 利用するエンティティ。パスでの指定も可能
   });
 }

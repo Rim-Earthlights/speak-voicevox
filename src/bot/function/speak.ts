@@ -1,10 +1,10 @@
-import { CacheType, ChatInputCommandInteraction, EmbedBuilder, GuildMember, VoiceBasedChannel } from 'discord.js';
-import { SpeakerRepository } from '../../model/repository/speakerRepository';
-import { DISCORD_CLIENT } from '../../constant/constants';
-import { UsersRepository } from '../../model/repository/usersRepository';
-import { CONFIG } from '../../config/config';
-import * as SpeakService from '../service/speakService';
 import { getVoiceConnection } from '@discordjs/voice';
+import { CacheType, ChatInputCommandInteraction, EmbedBuilder, GuildMember, VoiceBasedChannel } from 'discord.js';
+import { CONFIG } from '../../config/config';
+import { DISCORD_CLIENT } from '../../constant/constants';
+import { SpeakerRepository } from '../../model/repository/speakerRepository';
+import { UsersRepository } from '../../model/repository/usersRepository';
+import * as SpeakService from '../service/speakService';
 
 export async function CallSpeaker(interaction: ChatInputCommandInteraction<CacheType>, isForce = false) {
   if (!interaction.guild || !DISCORD_CLIENT.user) {
@@ -54,8 +54,12 @@ export async function CallSpeaker(interaction: ChatInputCommandInteraction<Cache
 }
 
 export async function ready(interaction: ChatInputCommandInteraction<CacheType>, uid: string): Promise<void> {
+  if (!interaction.guild) {
+    return;
+  }
+
   const usersRepository = new UsersRepository();
-  const user = await usersRepository.get(uid);
+  const user = await usersRepository.get(interaction.guild.id, uid);
 
   if (!user) {
     if (CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
@@ -68,7 +72,7 @@ export async function ready(interaction: ChatInputCommandInteraction<CacheType>,
     return;
   }
 
-  await SpeakService.initialize(user.voice_id);
+  await SpeakService.initialize(user.userSetting.voice_id);
 
   const p = await SpeakService.initAudioPlayer(interaction.guild!.id, interaction.channel as VoiceBasedChannel);
 
@@ -89,7 +93,7 @@ export async function ready(interaction: ChatInputCommandInteraction<CacheType>,
 
   interaction.reply({ embeds: [send] });
 
-  setTimeout(() => {}, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
+  setTimeout(() => { }, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
   const repository = new SpeakerRepository();
   await repository.updateUsedSpeaker(interaction.guild!.id, DISCORD_CLIENT.user!.id, true);
 }

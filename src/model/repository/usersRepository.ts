@@ -11,11 +11,32 @@ export class UsersRepository {
 
   /**
    * UIDからユーザを取得する.
+   * @param gid guild.id
    * @param uid user.id
    * @returns Promise<Users | null>
    */
-  public async get(uid: string): Promise<Models.Users | null> {
-    const user = await this.repository.findOne({ where: { id: uid } });
+  public async get(gid: string, uid: string): Promise<Models.Users | null> {
+    const user = await this.repository.findOne({ relations: { guild: true, userSetting: true }, where: { id: uid, guild_id: gid } });
+    return user;
+  }
+
+  /**
+   * UIDからユーザを取得する.
+   * @param uid user.id
+   * @returns Promise<Users | null>
+   */
+  public async getByUid(uid: string): Promise<Models.Users | null> {
+    const user = await this.repository.findOne({ relations: { userSetting: true }, where: { id: uid } });
+    return user;
+  }
+
+  /**
+   * すべてのユーザを取得する.
+   * @param gid guild.id
+   * @returns Promise<Users[]>
+   */
+  public async getAll(gid: string): Promise<Models.Users[]> {
+    const user = await this.repository.find({ relations: { guild: true, userSetting: true }, where: { guild_id: gid } });
     return user;
   }
 
@@ -29,26 +50,20 @@ export class UsersRepository {
   }
 
   /**
-   * ガチャ回数をpickLeft回に再セットする
-   * @param uid user id
-   * @param pickLeft 再セットするピック数
+   * ユーザを削除する
+   * @param gid guild.id
+   * @param uid user.id
    */
-  public async resetGacha(uid: string, pickLeft: number): Promise<void> {
-    await this.repository.save({ id: uid, pick_left: pickLeft });
+  public async delete(gid: string, uid: string): Promise<void> {
+    await this.repository.softDelete({ id: uid, guild_id: gid });
   }
 
   /**
-   * ユーザの残りピック数を10増やす
+   * ユーザを完全に削除する
+   * @param gid guild.id
+   * @param uid user.id
    */
-  public async addPickLeft(): Promise<void> {
-    const users = await this.repository.find();
-    const saveUsers = users.map((u) => {
-      if (u.pick_left < 70) {
-        return { ...u, pick_left: u.pick_left + 10 };
-      } else {
-        return { ...u };
-      }
-    });
-    await this.repository.save(saveUsers);
+  public async hardDelete(gid: string, uid: string): Promise<void> {
+    await this.repository.delete({ id: uid, guild_id: gid });
   }
 }

@@ -33,7 +33,7 @@ export async function commandSelector(message: Message) {
         return;
       }
       const usersRepository = new UsersRepository();
-      const user = await usersRepository.get(message.author.id);
+      const user = await usersRepository.get(message.guild.id, message.author.id);
 
       const voiceType = Number(content[0]);
       const speedSlace = Number(content[1]);
@@ -51,11 +51,11 @@ export async function commandSelector(message: Message) {
       }
 
       if (!voiceType && !speedSlace) {
-        const voiceName = await findVoiceFromId(user.voice_id);
+        const voiceName = await findVoiceFromId(user.userSetting.voice_id);
         const send = new EmbedBuilder()
           .setColor('#00ffff')
           .setTitle(`現在の設定`)
-          .setDescription(`声: ${voiceName}(${user.voice_id})\nスピード: ${user.voice_speed}`);
+          .setDescription(`声: ${voiceName}(${user.userSetting.voice_id})\nスピード: ${user.userSetting.voice_speed}`);
         await message.reply({ embeds: [send] });
         return;
       }
@@ -117,8 +117,11 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
     }
     case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME:
     case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME_SHORT: {
+      if (!interaction.guild) {
+        return;
+      }
       const usersRepository = new UsersRepository();
-      const user = await usersRepository.get(interaction.user.id);
+      const user = await usersRepository.get(interaction.guild.id, interaction.user.id);
 
       const voiceType = interaction.options.getNumber('voice_id');
       const voiceSpeed = interaction.options.getNumber('speed') || 1.0;
@@ -136,19 +139,16 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
       }
 
       if (!voiceType) {
-        const voiceName = await findVoiceFromId(user.voice_id);
+        const voiceName = await findVoiceFromId(user.userSetting.voice_id);
 
         const description = [
-          `声: ${voiceName}(${user.voice_id})`,
-          `スピード: ${user.voice_speed}`,
-          `ピッチ: ${user.voice_pitch}`,
-          `抑揚: ${user.voice_intonation}`,
+          `声: ${voiceName}(${user.userSetting.voice_id})`,
+          `スピード: ${user.userSetting.voice_speed}`,
+          `ピッチ: ${user.userSetting.voice_pitch}`,
+          `抑揚: ${user.userSetting.voice_intonation}`,
         ].join('\n');
 
-        const send = new EmbedBuilder()
-          .setColor('#00ffff')
-          .setTitle(`現在の設定`)
-          .setDescription(description);
+        const send = new EmbedBuilder().setColor('#00ffff').setTitle(`現在の設定`).setDescription(description);
         await interaction.editReply({ embeds: [send] });
         return;
       }

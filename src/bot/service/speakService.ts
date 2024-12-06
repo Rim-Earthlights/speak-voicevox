@@ -8,7 +8,7 @@ import {
   joinVoiceChannel,
   NoSubscriberBehavior,
   StreamType,
-  VoiceConnection
+  VoiceConnection,
 } from '@discordjs/voice';
 import { EmbedBuilder, VoiceBasedChannel } from 'discord.js';
 import got from 'got';
@@ -133,7 +133,7 @@ export async function addQueue(channel: VoiceBasedChannel, message: string, uid:
   const PlayerData = await getAudioPlayer(channel.guild.id, channel);
 
   const usersRepository = new UsersRepository();
-  const user = await usersRepository.get(uid);
+  const user = await usersRepository.get(channel.guild.id, uid);
 
   if (!user) {
     const send = new EmbedBuilder().setColor('#ff0000').setTitle(`エラー`).setDescription(`ユーザーが見つからなかった`);
@@ -209,21 +209,21 @@ export const audioQuery = async (user: Models.Users, message: string): Promise<B
 
   const coeiroSynthesisUri = `http://127.0.0.1:50032/v1/synthesis`;
 
-  if (user.voice_id < 1000) {
+  if (user.userSetting.voice_id < 1000) {
     const audioQuery = (await got
-      .post(audioQueryUri, { searchParams: { text: message, speaker: user.voice_id } })
+      .post(audioQueryUri, { searchParams: { text: message, speaker: user.userSetting.voice_id } })
       .json()) as AudioResponse;
     const stream = await got
       .post(synthesisUri, {
-        searchParams: { speaker: user.voice_id },
-        json: { ...audioQuery, speedScale: user.voice_speed },
+        searchParams: { speaker: user.userSetting.voice_id },
+        json: { ...audioQuery, speedScale: user.userSetting.voice_speed },
         responseType: 'buffer',
       })
       .buffer();
 
     return stream;
   } else {
-    const speaker = SPEAKER_IDS.find((speaker) => speaker.styleId === user.voice_id - 1000);
+    const speaker = SPEAKER_IDS.find((speaker) => speaker.styleId === user.userSetting.voice_id - 1000);
     if (!speaker) {
       return Buffer.from([]);
     }
@@ -234,10 +234,10 @@ export const audioQuery = async (user: Models.Users, message: string): Promise<B
           speakerUuid: speaker.uuid,
           styleId: speaker.styleId,
           text: message,
-          speedScale: user.voice_speed,
+          speedScale: user.userSetting.voice_speed,
           volumeScale: 1.0,
-          pitchScale: user.voice_pitch,
-          intonationScale: user.voice_intonation,
+          pitchScale: user.userSetting.voice_pitch,
+          intonationScale: user.userSetting.voice_intonation,
           prePhonemeLength: 1.0,
           postPhonemeLength: 1.0,
           outputSamplingRate: 44100,
