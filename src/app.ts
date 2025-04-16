@@ -8,6 +8,7 @@ import {
   SlashCommandBuilder,
   VoiceBasedChannel,
 } from 'discord.js';
+import express from 'express';
 import { fs } from 'mz';
 import { commandSelector, interactionSelector } from './bot/commands.js';
 import * as DotBotFunctions from './bot/dot_function';
@@ -20,7 +21,9 @@ import { DISCORD_CLIENT } from './constant/constants.js';
 import { initJob } from './job/job.js';
 import { SpeakerRepository } from './model/repository/speakerRepository.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
+import { routers } from './routers.js';
 import { GPTMode, LogLevel } from './type/types.js';
+
 
 // read config file
 const json = process.argv[2];
@@ -40,6 +43,16 @@ CONFIG.TOKEN = data.TOKEN;
 CONFIG.APP_ID = data.APP_ID;
 CONFIG.NAME = data.NAME;
 CONFIG.COMMAND = data.COMMAND;
+CONFIG.PORT = data.PORT;
+
+const app = express();
+app.use(express.json());
+
+app.use('/', routers);
+
+app.listen(CONFIG.PORT, () => {
+  console.log(`Server is running on port ${CONFIG.PORT}`);
+});
 
 console.log('==================================================');
 
@@ -75,12 +88,15 @@ TypeOrm.dataSource
 
 let commands: RESTPostAPIChatInputApplicationCommandsJSONBody[];
 
-const serverCommands = [new SlashCommandBuilder().setName(CONFIG.NAME).setDescription('読み上げを呼び出す')].map(
+const serverCommands = [new SlashCommandBuilder().setName(CONFIG.COMMAND.SPEAK.COMMAND_NAME).setDescription('読み上げを呼び出す')].map(
   (command) => command.toJSON()
 );
 
 const dmCommands = [
-  new SlashCommandBuilder().setName('erase').setDescription('チャット履歴を削除する'),
+  new SlashCommandBuilder()
+    .setName('erase')
+    .setDescription('ChatGPTとのチャット履歴を削除します')
+    .addBooleanOption((option) => option.setName('last').setDescription('直前のみ削除します').setRequired(false)),
   new SlashCommandBuilder()
     .setName(CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME_SHORT)
     .setDescription('スピーカーの設定を行う')

@@ -1,21 +1,34 @@
 import { CacheType, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
-import { gptList } from '../service/chatService';
 import { Logger } from '../../common/logger';
 import { LogLevel } from '../../type/types';
+import { gptList } from '../service/chatService';
 
 /**
  * ChatGPTの会話データの削除
  */
-export async function deleteChatData(interaction: ChatInputCommandInteraction<CacheType>) {
+export async function deleteChatData(interaction: ChatInputCommandInteraction<CacheType>, lastFlag?: boolean) {
   const { id } = getIdInfo(interaction);
   if (!id) {
+    await interaction.reply('データが存在しないみたい？');
     return;
   }
   const gpt = gptList.gpt.find((c) => c.id === id);
   if (!gpt) {
+    await interaction.reply('会話データが存在しないみたい？');
     return;
   }
 
+  if (lastFlag) {
+    const eraseData = gpt.chat[gpt.chat.length - 1];
+    gpt.chat.splice(gpt.chat.length - 1, 1);
+
+    const send = new EmbedBuilder()
+      .setColor('#00cc00')
+      .setTitle(`直前の会話データを削除したよ～！`)
+      .setDescription(`会話データ: \nid: ${gpt.id}\nmessage: ${eraseData.content}`);
+    await interaction.reply({ embeds: [send] });
+    return;
+  }
   gptList.gpt = gptList.gpt.filter((c) => c.id !== id);
   Logger.put({
     guild_id: interaction.guild?.id,
@@ -25,9 +38,7 @@ export async function deleteChatData(interaction: ChatInputCommandInteraction<Ca
     event: 'ChatGPT',
     message: [`Delete: ${gpt.id}`],
   });
-
-  const send = new EmbedBuilder().setColor('#00ffff').setTitle(`会話履歴の削除`).setDescription(`会話履歴を削除した`);
-  await interaction.reply({ embeds: [send] });
+  await interaction.reply('会話データを削除したよ～！');
 }
 
 function getIdInfo(interaction: ChatInputCommandInteraction<CacheType>) {

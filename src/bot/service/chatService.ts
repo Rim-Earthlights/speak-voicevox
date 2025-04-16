@@ -12,6 +12,7 @@ export async function initalize(id: string, model: ChatGPTModel, mode: GPTMode, 
     project: CONFIG.OPENAI.PROJECT,
     apiKey: CONFIG.OPENAI.KEY,
     maxRetries: 3,
+    baseURL: 'http://localhost:4001',
   });
   const gpt: ChatGPT = {
     id,

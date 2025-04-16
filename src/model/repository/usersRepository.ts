@@ -4,9 +4,11 @@ import { TypeOrm } from '../typeorm/typeorm.js';
 
 export class UsersRepository {
   private repository: Repository<Models.Users>;
+  private userSettingRepository: Repository<Models.UserSetting>;
 
   constructor() {
     this.repository = TypeOrm.dataSource.getRepository(Models.Users);
+    this.userSettingRepository = TypeOrm.dataSource.getRepository(Models.UserSetting);
   }
 
   /**
@@ -47,6 +49,24 @@ export class UsersRepository {
    */
   public async save(user: DeepPartial<Models.Users>): Promise<void> {
     await this.repository.save(user);
+  }
+
+  /**
+   * ユーザー設定を取得する
+   * @param uid user.id
+   * @returns Promise<UserSetting | null>
+   */
+  public async getUserSetting(uid: string): Promise<Models.UserSetting | null> {
+    const userSetting = await this.userSettingRepository.findOne({ where: { user_id: uid } });
+    return userSetting;
+  }
+
+  /**
+   * ユーザー設定を登録・更新する
+   * @param userSetting
+   */
+  public async saveUserSetting(userSetting: DeepPartial<Models.UserSetting>): Promise<void> {
+    await this.userSettingRepository.save(userSetting);
   }
 
   /**

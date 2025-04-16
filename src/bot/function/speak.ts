@@ -6,35 +6,21 @@ import { SpeakerRepository } from '../../model/repository/speakerRepository';
 import { UsersRepository } from '../../model/repository/usersRepository';
 import * as SpeakService from '../service/speakService';
 
-export async function CallSpeaker(interaction: ChatInputCommandInteraction<CacheType>, isForce = false) {
+export async function CallSpeaker(interaction: ChatInputCommandInteraction<CacheType>) {
   if (!interaction.guild || !DISCORD_CLIENT.user) {
     return;
   }
 
   const repository = new SpeakerRepository();
   const self = await repository.getSpeaker(interaction.guild.id, DISCORD_CLIENT.user.id);
-  const speaker = await repository.getUnusedSpeaker(interaction.guild.id);
 
-  if (isForce) {
-    if (!self?.is_used) {
-      const channel = (interaction.member as GuildMember).voice.channel;
-      if (channel) {
-        await ready(interaction, interaction.user.id);
-      }
-      return;
-    }
-  }
-
-  if (!speaker) {
+  if (!self) {
     const send = new EmbedBuilder()
       .setColor('#ff0000')
       .setTitle(`エラー`)
       .setDescription(`呼び出せるbotが見つからなかった`);
 
-    await interaction.reply({ embeds: [send] });
-    return;
-  }
-  if (speaker.user_id !== DISCORD_CLIENT.user.id) {
+    await interaction.editReply({ embeds: [send] });
     return;
   }
 
@@ -46,7 +32,12 @@ export async function CallSpeaker(interaction: ChatInputCommandInteraction<Cache
       .setTitle(`エラー`)
       .setDescription(`userのボイスチャンネルが見つからなかった`);
 
-    await interaction.reply({ content: `ボイスチャンネルに入ってから使って～！`, embeds: [send] });
+    await interaction.editReply({ content: `ボイスチャンネルに入ってから使って～！`, embeds: [send] });
+    return;
+  }
+
+  if (self?.is_used) {
+    await interaction.editReply({ content: `読み上げちゃんはすでに使用中です。` });
     return;
   }
 
@@ -67,7 +58,7 @@ export async function ready(interaction: ChatInputCommandInteraction<CacheType>,
         .setColor('#ff0000')
         .setTitle(`エラー`)
         .setDescription(`ユーザーが見つからなかった`);
-      interaction.reply({ embeds: [send] });
+      interaction.editReply({ embeds: [send] });
     }
     return;
   }
@@ -81,7 +72,7 @@ export async function ready(interaction: ChatInputCommandInteraction<CacheType>,
       .setColor('#ff0000')
       .setTitle(`エラー`)
       .setDescription(`他の場所で読み上げちゃんが起動中だよ`);
-    interaction.reply({ embeds: [send] });
+    interaction.editReply({ embeds: [send] });
     return;
   }
 
@@ -91,7 +82,7 @@ export async function ready(interaction: ChatInputCommandInteraction<CacheType>,
     .setTitle('読み上げを開始します')
     .setDescription(`終了する際は \`.${CONFIG.COMMAND.DISCONNECT}\` で終わるよ`);
 
-  interaction.reply({ embeds: [send] });
+  interaction.editReply({ embeds: [send] });
 
   setTimeout(() => { }, CONFIG.COMMAND.SPEAK.SLEEP_TIME * 1000);
   const repository = new SpeakerRepository();

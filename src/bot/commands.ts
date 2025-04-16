@@ -33,14 +33,14 @@ export async function commandSelector(message: Message) {
         return;
       }
       const usersRepository = new UsersRepository();
-      const user = await usersRepository.get(message.guild.id, message.author.id);
+      const userSetting = await usersRepository.getUserSetting(message.author.id);
 
       const voiceType = Number(content[0]);
       const speedSlace = Number(content[1]);
       const pitch = Number(content[2]);
       const intonation = Number(content[3]);
 
-      if (!user) {
+      if (!userSetting) {
         const send = new EmbedBuilder()
           .setColor('#ff0000')
           .setTitle(`エラー`)
@@ -51,11 +51,11 @@ export async function commandSelector(message: Message) {
       }
 
       if (!voiceType && !speedSlace) {
-        const voiceName = await findVoiceFromId(user.userSetting.voice_id);
+        const voiceName = await findVoiceFromId(userSetting.voice_id);
         const send = new EmbedBuilder()
           .setColor('#00ffff')
           .setTitle(`現在の設定`)
-          .setDescription(`声: ${voiceName}(${user.userSetting.voice_id})\nスピード: ${user.userSetting.voice_speed}`);
+          .setDescription(`声: ${voiceName}(${userSetting.voice_id})\nスピード: ${userSetting.voice_speed}`);
         await message.reply({ embeds: [send] });
         return;
       }
@@ -72,20 +72,27 @@ export async function commandSelector(message: Message) {
         return;
       }
 
-      const saveuser = {
-        ...user,
+      await usersRepository.saveUserSetting({
+        user_id: message.author.id,
         voice_id: Number.isNaN(voiceType) ? 0 : voiceType,
         voice_speed: Number.isNaN(speedSlace) ? 1.0 : speedSlace,
         voice_pitch: Number.isNaN(pitch) ? 0.0 : pitch,
         voice_intonation: Number.isNaN(intonation) ? 1.0 : intonation,
-      };
+      });
+      const result = await usersRepository.getUserSetting(message.author.id);
 
-      await usersRepository.save(saveuser);
+      if (!result) {
+        return;
+      }
 
-      const send = new EmbedBuilder()
-        .setColor('#00ff00')
-        .setTitle(`設定完了`)
-        .setDescription(`声: ${voiceName}(${voiceType})\nスピード: ${saveuser.voice_speed}`);
+      const description = [
+        `声: ${voiceName}(${result.voice_id})`,
+        `スピード: ${result.voice_speed}`,
+        `ピッチ: ${result.voice_pitch}`,
+        `抑揚: ${result.voice_intonation}`,
+      ].join('\n');
+
+      const send = new EmbedBuilder().setColor('#00ff00').setTitle(`設定完了`).setDescription(description);
       await message.reply({ embeds: [send] });
 
       break;
@@ -108,20 +115,21 @@ export async function commandSelector(message: Message) {
 
 export async function interactionSelector(interaction: ChatInputCommandInteraction<CacheType>) {
   const { commandName } = interaction;
-  await interaction.deferReply();
 
   switch (commandName) {
     case CONFIG.COMMAND.SPEAK.COMMAND_NAME: {
+      await interaction.deferReply();
       await BotFunctions.Speak.CallSpeaker(interaction);
       break;
     }
     case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME:
     case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME_SHORT: {
+      await interaction.deferReply();
       if (!interaction.guild) {
         return;
       }
       const usersRepository = new UsersRepository();
-      const user = await usersRepository.get(interaction.guild.id, interaction.user.id);
+      const userSetting = await usersRepository.getUserSetting(interaction.user.id);
 
       const voiceType = interaction.options.getNumber('voice_id');
       const voiceSpeed = interaction.options.getNumber('speed') || 1.0;
@@ -133,19 +141,19 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
         return;
       }
 
-      if (!user) {
+      if (!userSetting) {
         await interaction.editReply({ content: 'ユーザーが見つかりません。' });
         return;
       }
 
       if (!voiceType) {
-        const voiceName = await findVoiceFromId(user.userSetting.voice_id);
+        const voiceName = await findVoiceFromId(userSetting.voice_id);
 
         const description = [
-          `声: ${voiceName}(${user.userSetting.voice_id})`,
-          `スピード: ${user.userSetting.voice_speed}`,
-          `ピッチ: ${user.userSetting.voice_pitch}`,
-          `抑揚: ${user.userSetting.voice_intonation}`,
+          `声: ${voiceName}(${userSetting.voice_id})`,
+          `スピード: ${userSetting.voice_speed}`,
+          `ピッチ: ${userSetting.voice_pitch}`,
+          `抑揚: ${userSetting.voice_intonation}`,
         ].join('\n');
 
         const send = new EmbedBuilder().setColor('#00ffff').setTitle(`現在の設定`).setDescription(description);
@@ -165,21 +173,19 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
         return;
       }
 
-      const saveuser = {
-        ...user,
+      await usersRepository.saveUserSetting({
+        user_id: interaction.user.id,
         voice_id: voiceType,
         voice_speed: voiceSpeed,
         voice_pitch: voicePitch,
         voice_intonation: voiceIntonation,
-      };
-
-      await usersRepository.save(saveuser);
+      });
 
       const description = [
         `声: ${voiceName}(${voiceType})`,
-        `スピード: ${saveuser.voice_speed}`,
-        `ピッチ: ${saveuser.voice_pitch}`,
-        `抑揚: ${saveuser.voice_intonation}`,
+        `スピード: ${voiceSpeed}`,
+        `ピッチ: ${voicePitch}`,
+        `抑揚: ${voiceIntonation}`,
       ].join('\n');
 
       const send = new EmbedBuilder().setColor('#00ff00').setTitle(`設定完了`).setDescription(description);
@@ -187,7 +193,8 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
       break;
     }
     case 'erase': {
-      await BotFunctions.Chat.deleteChatData(interaction);
+      const last = interaction.options.getBoolean('last') ?? undefined;
+      await BotFunctions.Chat.deleteChatData(interaction, last);
       break;
     }
   }

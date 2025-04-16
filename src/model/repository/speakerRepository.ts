@@ -1,4 +1,5 @@
 import { Repository } from 'typeorm';
+import { DISCORD_CLIENT } from '../../constant/constants.js';
 import * as Models from '../models/index.js';
 import { TypeOrm } from '../typeorm/typeorm.js';
 
@@ -7,6 +8,25 @@ export class SpeakerRepository {
 
   constructor() {
     this.repository = TypeOrm.dataSource.getRepository(Models.Speaker);
+  }
+
+  /**
+   * 利用されているか確認する
+   * @param gid
+   * @returns
+   */
+  public async getStatus(gid: string): Promise<boolean | null> {
+    if (!DISCORD_CLIENT?.user) {
+      return null;
+    }
+
+    const speaker = await this.repository.findOne({ where: { guild_id: gid, user_id: DISCORD_CLIENT.user.id } });
+    if (!speaker) {
+      console.error(`Speaker not found: ${gid}`);
+      await this.registerSpeaker(gid, DISCORD_CLIENT.user.id);
+      return false;
+    }
+    return speaker.is_used === 1;
   }
 
   /**
