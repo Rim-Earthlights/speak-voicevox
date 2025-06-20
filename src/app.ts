@@ -24,7 +24,6 @@ import { TypeOrm } from './model/typeorm/typeorm.js';
 import { routers } from './routers.js';
 import { GPTMode, LogLevel } from './type/types.js';
 
-
 // read config file
 const json = process.argv[2];
 if (!json) {
@@ -88,9 +87,9 @@ TypeOrm.dataSource
 
 let commands: RESTPostAPIChatInputApplicationCommandsJSONBody[];
 
-const serverCommands = [new SlashCommandBuilder().setName(CONFIG.COMMAND.SPEAK.COMMAND_NAME).setDescription('読み上げを呼び出す')].map(
-  (command) => command.toJSON()
-);
+const serverCommands = [
+  new SlashCommandBuilder().setName(CONFIG.COMMAND.SPEAK.COMMAND_NAME).setDescription('読み上げを呼び出す'),
+].map((command) => command.toJSON());
 
 const dmCommands = [
   new SlashCommandBuilder()
@@ -108,6 +107,11 @@ const dmCommands = [
     .addNumberOption((option) =>
       option.setName('intonation').setDescription('声の抑揚 下げるほど棒読み 1が標準 (0.0 - 1.0)')
     ),
+  new SlashCommandBuilder().setName('model-list').setDescription('モデル一覧を表示します'),
+  new SlashCommandBuilder()
+    .setName('model-set')
+    .setDescription('モデルを設定します')
+    .addStringOption((option) => option.setName('model').setDescription('使用するモデル').setRequired(true)),
 ].map((command) => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(CONFIG.TOKEN);

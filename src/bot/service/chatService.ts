@@ -1,12 +1,12 @@
-import { OpenAI } from 'openai';
-import { CHATBOT_LEMON_TEMPLATE, CHATBOT_LIME_TEMPLATE } from '../../constant/constants.js';
-import { CONFIG, ChatGPTModel } from '../../config/config.js';
 import dayjs from 'dayjs';
+import { OpenAI } from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
+import { CONFIG, LiteLLMModel } from '../../config/config.js';
+import { CHATBOT_LEMON_TEMPLATE, CHATBOT_LIME_TEMPLATE } from '../../constant/constants.js';
 
 export const gptList = { gpt: [] as ChatGPT[] };
 
-export async function initalize(id: string, model: ChatGPTModel, mode: GPTMode, isGuild: boolean) {
+export async function initalize(id: string, model: LiteLLMModel, mode: GPTMode, isGuild: boolean) {
   const openai = new OpenAI({
     organization: CONFIG.OPENAI.ORG,
     project: CONFIG.OPENAI.PROJECT,
@@ -34,7 +34,7 @@ export async function initalize(id: string, model: ChatGPTModel, mode: GPTMode, 
 export type ChatGPT = {
   id: string;
   openai: OpenAI;
-  model: ChatGPTModel;
+  model: LiteLLMModel;
   chat: ChatCompletionMessageParam[];
   isGuild: boolean;
   timestamp: dayjs.Dayjs;

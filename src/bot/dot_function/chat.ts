@@ -2,14 +2,14 @@ import dayjs from 'dayjs';
 import { EmbedBuilder, Message } from 'discord.js';
 import { ChatCompletionContentPart } from 'openai/resources';
 import { Logger } from '../../common/logger';
-import { ChatGPTModel } from '../../config/config';
+import { LiteLLMModel } from '../../config/config';
 import { GPTMode, LogLevel, Role } from '../../type/types';
 import * as ChatService from '../service/chatService';
 
 /**
  * ChatGPTで会話する
  */
-export async function talk(message: Message, content: string, model: ChatGPTModel, mode: GPTMode) {
+export async function talk(message: Message, content: string, model: LiteLLMModel, mode: GPTMode) {
   const { id, isGuild } = getIdInfo(message);
   let gpt = ChatService.gptList.gpt.find((c) => c.id === id);
   if (!gpt) {

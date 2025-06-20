@@ -1,4 +1,4 @@
-import got from 'got';
+import axios from 'axios';
 import { CoeiroSpeakersResponse, SpeakersResponse } from '../interface/audioResponse';
 
 export let SPEAKER_IDS: { uuid: string; styleId: number }[] = [];
@@ -11,8 +11,10 @@ export let SPEAKER_IDS: { uuid: string; styleId: number }[] = [];
 export const findVoiceFromId = async (id: number): Promise<string | null> => {
   const speakersUri = `http://127.0.0.1:50021/speakers`;
   const coeiroUri = `http://127.0.0.1:50032/v1/speakers`;
-  const speakers = (await got.get(speakersUri).json()) as SpeakersResponse[];
-  const coeiro = (await got.get(coeiroUri).json()) as CoeiroSpeakersResponse[];
+  const speakersResponse = await axios.get(speakersUri);
+  const speakers = speakersResponse.data as SpeakersResponse[];
+  const coeiroResponse = await axios.get(coeiroUri);
+  const coeiro = coeiroResponse.data as CoeiroSpeakersResponse[];
 
   let voiceName: string | null = null;
   if (id < 1000) {
@@ -53,7 +55,8 @@ export const convertVoiceId = (id: number): number => {
 export const initializeCoeiroSpeakerIds = async () => {
   SPEAKER_IDS = [];
   const coeiroUri = `http://127.0.0.1:50032/v1/speakers`;
-  const coeiro = (await got.get(coeiroUri).json()) as CoeiroSpeakersResponse[];
+  const coeiroResponse = await axios.get(coeiroUri);
+  const coeiro = coeiroResponse.data as CoeiroSpeakersResponse[];
 
   coeiro.map((speaker) => {
     speaker.styles.map((style) => {

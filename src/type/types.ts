@@ -1,7 +1,7 @@
-import OpenAI from 'openai';
-import { ChatGPTModel } from '../config/config';
-import { ChatCompletionMessageParam } from 'openai/resources';
 import dayjs from 'dayjs';
+import OpenAI from 'openai';
+import { ChatCompletionMessageParam } from 'openai/resources';
+import { LiteLLMModel } from '../config/config';
 
 export type LogData = {
   guild_id?: string;
@@ -21,7 +21,7 @@ export enum LogLevel {
 export type ChatGPT = {
   id: string;
   openai: OpenAI;
-  model: ChatGPTModel;
+  model: LiteLLMModel;
   chat: ChatCompletionMessageParam[];
   isGuild: boolean;
   timestamp: dayjs.Dayjs;
@@ -49,3 +49,12 @@ export enum Role {
   USER = 'user',
   ASSISTANT = 'assistant',
 }
+
+export type ModelResponse = {
+  data: {
+    id: string;
+    object: string;
+    created: number;
+    owned_by: string;
+  }[];
+};

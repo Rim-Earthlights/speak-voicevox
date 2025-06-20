@@ -197,5 +197,18 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
       await BotFunctions.Chat.deleteChatData(interaction, last);
       break;
     }
+    case 'model-list': {
+      await BotFunctions.Chat.showModelList(interaction);
+      break;
+    }
+    case 'model-set': {
+      const model = interaction.options.getString('model');
+      if (!model) {
+        await interaction.editReply({ content: 'モデルが指定されていません。' });
+        return;
+      }
+      await BotFunctions.Chat.setModel(interaction, model);
+      break;
+    }
   }
 }
