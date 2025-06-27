@@ -93,7 +93,7 @@ const serverCommands = [
 
 const dmCommands = [
   new SlashCommandBuilder()
-    .setName('erase')
+    .setName('delete')
     .setDescription('ChatGPTとのチャット履歴を削除します')
     .addBooleanOption((option) => option.setName('last').setDescription('直前のみ削除します').setRequired(false)),
   new SlashCommandBuilder()
@@ -127,7 +127,7 @@ DISCORD_CLIENT.once('ready', async () => {
   const guilds = await DISCORD_CLIENT.guilds.fetch();
   guilds.forEach(async (guild) => {
     rest
-      .put(Routes.applicationGuildCommands(CONFIG.APP_ID, guild.id), { body: serverCommands })
+      .put(Routes.applicationGuildCommands(CONFIG.APP_ID, guild.id), { body: [] /**serverCommands */ })
       .then(
         async () =>
           await Logger.put({

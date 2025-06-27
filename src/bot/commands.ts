@@ -23,10 +23,10 @@ export async function commandSelector(message: Message) {
       await DotBotFunctions.Chat.talk(message, content.join(' '), CONFIG.OPENAI.DEFAULT_MODEL, GPTMode.DEFAULT);
       break;
     }
-    case CONFIG.COMMAND.SPEAK.COMMAND_NAME: {
-      await DotBotFunctions.Speak.CallSpeaker(message);
-      break;
-    }
+    // case CONFIG.COMMAND.SPEAK.COMMAND_NAME: {
+    //   await DotBotFunctions.Speak.CallSpeaker(message);
+    //   break;
+    // }
     case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME:
     case CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME_SHORT: {
       if (!CONFIG.COMMAND.SPEAKER_CONFIG.ENABLE) {
@@ -192,7 +192,7 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
       await interaction.editReply({ embeds: [send] });
       break;
     }
-    case 'erase': {
+    case 'delete': {
       const last = interaction.options.getBoolean('last') ?? undefined;
       await BotFunctions.Chat.deleteChatData(interaction, last);
       break;
