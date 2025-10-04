@@ -1,3 +1,5 @@
+export { BotInfo } from './botInfo.js';
+export { ChatHistory } from './chatHistory.js';
 export { Color } from './color.js';
 export { Gacha } from './gacha.js';
 export { Guild } from './guild.js';

@@ -13,6 +13,7 @@ import { fs } from 'mz';
 import { commandSelector, interactionSelector } from './bot/commands.js';
 import * as DotBotFunctions from './bot/dot_function';
 import { joinVoiceChannel, leftVoiceChannel } from './bot/dot_function/room.js';
+import { LiteLLMMode } from './bot/service/chatService.js';
 import * as SpeakService from './bot/service/speakService.js';
 import { initializeCoeiroSpeakerIds } from './common/common.js';
 import { Logger } from './common/logger.js';
@@ -22,7 +23,7 @@ import { initJob } from './job/job.js';
 import { SpeakerRepository } from './model/repository/speakerRepository.js';
 import { TypeOrm } from './model/typeorm/typeorm.js';
 import { routers } from './routers.js';
-import { GPTMode, LogLevel } from './type/types.js';
+import { LogLevel } from './type/types.js';
 
 // read config file
 const json = process.argv[2];
@@ -96,6 +97,10 @@ const dmCommands = [
     .setName('delete')
     .setDescription('ChatGPTとのチャット履歴を削除します')
     .addBooleanOption((option) => option.setName('last').setDescription('直前のみ削除します').setRequired(false)),
+  new SlashCommandBuilder()
+    .setName('revert')
+    .setDescription('最新のチャット履歴を復元します')
+    .addStringOption((option) => option.setName('uuid').setDescription('会話ID').setRequired(false)),
   new SlashCommandBuilder()
     .setName(CONFIG.COMMAND.SPEAKER_CONFIG.COMMAND_NAME_SHORT)
     .setDescription('スピーカーの設定を行う')
@@ -206,12 +211,12 @@ DISCORD_CLIENT.on('messageCreate', async (message: Message) => {
     message.content.includes(`<@${DISCORD_CLIENT.user?.id}>`) &&
     message.content.trimEnd() !== `<@${DISCORD_CLIENT.user?.id}>`
   ) {
-    await DotBotFunctions.Chat.talk(message, message.content, CONFIG.OPENAI.DEFAULT_MODEL, GPTMode.DEFAULT);
+    await DotBotFunctions.Chat.talk(message, message.content, CONFIG.OPENAI.DEFAULT_MODEL, LiteLLMMode.DEFAULT);
     return;
   }
 
   if (message.channel.type === ChannelType.DM) {
-    await DotBotFunctions.Chat.talk(message, message.content, CONFIG.OPENAI.DEFAULT_MODEL, GPTMode.DEFAULT);
+    await DotBotFunctions.Chat.talk(message, message.content, CONFIG.OPENAI.DEFAULT_MODEL, LiteLLMMode.DEFAULT);
     return;
   }
 

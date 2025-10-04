@@ -18,7 +18,7 @@ export enum LogLevel {
   SYSTEM = 'system',
 }
 
-export type ChatGPT = {
+export type LiteLLM = {
   id: string;
   openai: OpenAI;
   model: LiteLLMModel;
@@ -26,11 +26,6 @@ export type ChatGPT = {
   isGuild: boolean;
   timestamp: dayjs.Dayjs;
 };
-
-export enum GPTMode {
-  DEFAULT = 'default',
-  NOPROMPT = 'no_prompt',
-}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type VisionMessage = {
