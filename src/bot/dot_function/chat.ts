@@ -3,20 +3,23 @@ import { EmbedBuilder, Message } from 'discord.js';
 import { ChatCompletionContentPart } from 'openai/resources';
 import { Logger } from '../../common/logger';
 import { LiteLLMModel } from '../../config/config';
-import { GPTMode, LogLevel, Role } from '../../type/types';
+import { DISCORD_CLIENT } from '../../constant/constants';
+import { ChatHistoryChannelType } from '../../model/models/chatHistory';
+import { ChatHistoryRepository } from '../../model/repository/chatHistoryRepository';
+import { LogLevel, Role } from '../../type/types';
 import * as ChatService from '../service/chatService';
 
 /**
  * ChatGPTで会話する
  */
-export async function talk(message: Message, content: string, model: LiteLLMModel, mode: GPTMode) {
+export async function talk(message: Message, content: string, model: LiteLLMModel, mode: ChatService.LiteLLMMode) {
   const { id, isGuild } = getIdInfo(message);
-  let gpt = ChatService.gptList.gpt.find((c) => c.id === id);
-  if (!gpt) {
-    gpt = await ChatService.initalize(id, model, mode, isGuild);
-    ChatService.gptList.gpt.push(gpt);
+  let llm = ChatService.llmList.llm.find((c) => c.id === id);
+  if (!llm) {
+    llm = await ChatService.initalize(id, model, mode, isGuild);
+    ChatService.llmList.llm.push(llm);
   }
-  const openai = gpt.openai;
+  const openai = llm.openai;
   let weather = undefined;
 
   const user = message.mentions.users.map((u) => {
@@ -44,12 +47,12 @@ export async function talk(message: Message, content: string, model: LiteLLMMode
   if (message.attachments) {
     const attachmentUrls = message.attachments.filter((a) => a.height && a.width).map((a) => a.url);
     const urls = attachmentUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }));
-    gpt.chat.push({
+    llm.chat.push({
       role: Role.USER,
       content: [{ type: 'text', text: sendContent }, ...urls] as Array<ChatCompletionContentPart>,
     });
   } else {
-    gpt.chat.push({
+    llm.chat.push({
       role: Role.USER,
       content: sendContent,
     });
@@ -67,7 +70,7 @@ export async function talk(message: Message, content: string, model: LiteLLMMode
   try {
     const response = await openai.chat.completions.create({
       model: model,
-      messages: gpt.chat,
+      messages: llm.chat,
     });
 
     const completion = response.choices[0].message;
@@ -78,8 +81,8 @@ export async function talk(message: Message, content: string, model: LiteLLMMode
       return;
     }
 
-    gpt.chat.push({ role: Role.ASSISTANT, content: completion.content });
-    gpt.timestamp = dayjs();
+    llm.chat.push({ role: Role.ASSISTANT, content: completion.content });
+    llm.timestamp = dayjs();
 
     if (completion.content.length > 2000) {
       const texts = completion.content.split('\n');
@@ -96,6 +99,19 @@ export async function talk(message: Message, content: string, model: LiteLLMMode
     } else {
       await message.reply(completion.content);
     }
+
+    const chatHistoryRepository = new ChatHistoryRepository();
+    await chatHistoryRepository.save({
+      uuid: llm.uuid,
+      bot_id: DISCORD_CLIENT.user!.id,
+      channel_id: id,
+      name: message.author.displayName,
+      content: llm.chat,
+      model: llm.model,
+      mode: ChatService.LiteLLMMode.DEFAULT,
+      channel_type: isGuild ? ChatHistoryChannelType.GUILD : ChatHistoryChannelType.DM,
+    });
+
 
     await Logger.put({
       guild_id: message.guild?.id,
@@ -116,7 +132,7 @@ export async function talk(message: Message, content: string, model: LiteLLMMode
     console.error(error);
 
     if (error.message.includes('429')) {
-      gpt.chat.pop();
+      llm.chat.pop();
       await message.reply(`10秒ほど待ってからもう一度送信してみて！`);
     } else {
       await message.reply(`エラーが発生しました。\n\`\`\`\n${error.message}\n\`\`\``);
@@ -128,7 +144,7 @@ export async function talk(message: Message, content: string, model: LiteLLMMode
 function getIdInfo(message: Message) {
   const guild = message.guild;
   if (!guild) {
-    return { id: message.channel.id, isGuild: false };
+    return { id: message.author.id, isGuild: false };
   }
   return { id: guild.id, isGuild: true };
 }

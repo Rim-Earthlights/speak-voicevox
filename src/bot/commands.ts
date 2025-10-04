@@ -2,9 +2,9 @@ import { CacheType, ChatInputCommandInteraction, EmbedBuilder, Message } from 'd
 import { findVoiceFromId, initializeCoeiroSpeakerIds } from '../common/common';
 import { CONFIG } from '../config/config';
 import { UsersRepository } from '../model/repository/usersRepository';
-import { GPTMode } from '../type/types';
 import * as DotBotFunctions from './dot_function';
 import * as BotFunctions from './function';
+import { LiteLLMMode } from './service/chatService';
 
 /**
  * 渡されたコマンドから処理を実行する
@@ -20,7 +20,7 @@ export async function commandSelector(message: Message) {
   content.shift();
   switch (command) {
     case CONFIG.NAME: {
-      await DotBotFunctions.Chat.talk(message, content.join(' '), CONFIG.OPENAI.DEFAULT_MODEL, GPTMode.DEFAULT);
+      await DotBotFunctions.Chat.talk(message, content.join(' '), CONFIG.OPENAI.DEFAULT_MODEL, LiteLLMMode.DEFAULT);
       break;
     }
     // case CONFIG.COMMAND.SPEAK.COMMAND_NAME: {
@@ -208,6 +208,10 @@ export async function interactionSelector(interaction: ChatInputCommandInteracti
         return;
       }
       await BotFunctions.Chat.setModel(interaction, model);
+      break;
+    }
+    case 'revert': {
+      await BotFunctions.Chat.revert(interaction);
       break;
     }
   }
